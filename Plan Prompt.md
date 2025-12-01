@@ -130,6 +130,29 @@ Design the product so it supports at least:
        - Individual ads
        - Campaigns
        - Daily/periodic performance summaries
+   - Commenting should feel similar to Google Sheets / Figma-style pins:
+     - **Interaction model**:
+       - Right-click any dashboard element (e.g. chart, card, metric tile, table cell) to open a context menu with “Add comment”.
+       - Selecting it opens a small inline composer near the click, scoped to that element and current filters/date range.
+       - Saving creates a visible hotspot (dot/badge) that can be hovered/clicked to open the thread.
+     - **Pinned hotspots**:
+       - Hotspots are rendered in an overlay inside each widget (e.g. top-right of a card, or at the exact click offset for charts/tables).
+       - Hover/click shows the thread with replies, resolve state, and basic mentions (mentions can be v2.1+).
+       - Resolved threads can either be hidden by default or shown in a “resolved” state (faded/outlined).
+     - **Anchoring model**:
+       - Each comment stores an anchor describing *what* it’s attached to, e.g. widget-level or table-cell-level:
+         - `widget` anchors: `{ kind: "widget"; widgetId: string; xPct?: number; yPct?: number }`
+         - `tableCell` anchors: `{ kind: "tableCell"; tableId: string; rowKey: string; columnKey: string }`
+       - `widgetId` / `tableId` / row+column keys must be stable IDs that don’t change when layouts are re-ordered or renamed.
+       - Optional `xPct` / `yPct` position (0–1) keeps pins in roughly the same visual spot within a widget.
+     - **Comment data model (high level)**:
+       - `Comment` records include: `id`, `anchor`, `text`, `createdBy`, `createdAt`, `resolved`, optional `parentId` for replies.
+       - Threads are modeled as a root comment plus replies (same anchor, `parentId` pointing to the root).
+       - Comments are scoped to an org/team and (optionally) a dashboard/report ID and current filter context (e.g. date range, campaign).
+     - **Runtime behavior**:
+       - When rendering the dashboard, each widget queries for comments whose anchors match its ID and (if needed) filter context.
+       - The UI renders hotspots based on those anchors and wires them into a shared comment thread component.
+       - The system should be designed so that adding real-time updates (e.g. WebSockets) later only changes the transport layer, not the data shape.
    - Long term vision: a **one-stop shop** for our team to review ad performance and discuss changes.
    - For V1, just ensure:
      - The data model and UI layout will not fight adding this later.
