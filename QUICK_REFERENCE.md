@@ -421,4 +421,53 @@ Monitoring
 
 ---
 
+## 💬 Anchored Comments Feature (Phase 3)
+
+### Concept
+Google Sheets/Figma-style comment pins anchored to dashboard elements via right-click.
+
+### Quick Implementation
+```typescript
+// Wrap any dashboard element
+<CommentPinsOverlay
+  anchorType="chart"
+  anchorTargetId="monthly-trend-chart"
+  organizationId={orgId}
+>
+  <YourChartComponent />
+</CommentPinsOverlay>
+```
+
+### Anchor Types
+- `widget` - Dashboard cards/widgets
+- `chart` - Charts with data point anchoring  
+- `tableCell` - Specific table cells (row + column)
+- `metricCard` - Summary metric cards
+
+### Data Model
+```typescript
+type Comment = {
+  id: string
+  anchor: {
+    kind: 'widget' | 'chart' | 'tableCell' | 'metricCard'
+    targetId: string
+    metadata: { xPct?: number; yPct?: number; rowKey?: string; columnKey?: string }
+  }
+  text: string
+  resolved: boolean
+  parentId?: string // for replies
+  mentions?: string[]
+}
+```
+
+### Key Features
+- Right-click to add comment
+- Visual pins/hotspots with badges
+- Threading with replies
+- Resolve/unresolve
+- @mentions with notifications
+- Real-time updates (optional WebSocket)
+
+---
+
 **Print this page for quick reference during development!** 🚀

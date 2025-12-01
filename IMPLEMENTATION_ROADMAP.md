@@ -684,6 +684,85 @@ This document provides a week-by-week breakdown of development tasks with time e
 - [ ] Predictive analytics (ML-powered)
 - [ ] Creative performance patterns
 
+#### Anchored Comments & Collaboration (Priority Feature)
+**Estimated Time: 3-4 weeks**
+
+Implement Google Sheets/Figma-style comment pins anchored to dashboard elements.
+
+**Week 1: Foundation (20-26 hours)**
+- [ ] Add comments table to database schema
+- [ ] Create comment anchor types enum
+- [ ] Build basic API routes (GET, POST comments)
+- [ ] Write Server Actions for comment CRUD
+- [ ] Add permission checks (ADD_COMMENTS permission)
+- [ ] Test database layer
+
+**Week 2: Core UI Components (24-30 hours)**
+- [ ] Build `CommentPinsOverlay` wrapper component
+- [ ] Implement right-click context menu
+- [ ] Create `CommentPin` hotspot component
+- [ ] Build `CommentComposer` for new comments
+- [ ] Add visual indicators (dots, badges, counts)
+- [ ] Implement hover/click interactions
+- [ ] Test on different dashboard elements
+
+**Week 3: Threading & Features (22-28 hours)**
+- [ ] Build `CommentThread` popover component
+- [ ] Implement reply functionality
+- [ ] Add resolve/unresolve actions
+- [ ] Create `useAnchoredComments` hook
+- [ ] Add @mention parsing and UI
+- [ ] Build notification system integration
+- [ ] Test comment threading
+
+**Week 4: Polish & Real-time (18-24 hours)**
+- [ ] Add WebSocket support for real-time updates
+- [ ] Implement optimistic UI updates
+- [ ] Add keyboard shortcuts (Esc to close, etc.)
+- [ ] Polish animations and transitions
+- [ ] Build activity feed for comments
+- [ ] Add email notifications for mentions
+- [ ] Write E2E tests for comment flows
+- [ ] Document usage patterns
+
+**Anchor Types Supported:**
+- `widget` - Entire dashboard widgets/cards
+- `chart` - Charts with optional data point anchoring
+- `tableCell` - Specific table cells (row + column)
+- `metricCard` - Summary metric cards
+- `dataPoint` - Specific data points in visualizations
+
+**Data Model:**
+```typescript
+type CommentAnchor =
+  | { kind: 'widget'; widgetId: string; xPct?: number; yPct?: number }
+  | { kind: 'chart'; chartId: string; dataPoint?: string; xPct?: number; yPct?: number }
+  | { kind: 'tableCell'; tableId: string; rowKey: string; columnKey: string }
+  | { kind: 'metricCard'; cardId: string }
+```
+
+**Acceptance Criteria:**
+✅ Can add comment via right-click on any element  
+✅ Comments show as visual pins with hotspots  
+✅ Threading works with replies  
+✅ Resolve/unresolve functionality  
+✅ @mentions trigger notifications  
+✅ Real-time updates across users  
+✅ Mobile-friendly interaction (tap instead of right-click)  
+
+**Usage Example:**
+```typescript
+<CommentPinsOverlay
+  anchorType="chart"
+  anchorTargetId="monthly-trend-chart"
+  organizationId={currentOrg.id}
+>
+  <MonthlyTrendChart data={chartData} />
+</CommentPinsOverlay>
+```
+
+---
+
 #### Automation & Alerts
 - [ ] Slack/Discord notifications
 - [ ] Automated budget recommendations

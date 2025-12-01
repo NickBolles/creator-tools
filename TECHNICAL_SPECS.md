@@ -808,6 +808,504 @@ export function DataEntryModal({
 
 ---
 
+## Anchored Comments System (Phase 3)
+
+### Database Schema Extension
+
+#### **comments** table
+```sql
+id: uuid (PK)
+organization_id: uuid (FK)
+anchor_type: enum (widget, chart, tableCell, metricCard, dataPoint)
+anchor_target_id: string -- widgetId, chartId, tableId, etc.
+anchor_metadata: jsonb -- { rowKey, columnKey, xPct, yPct, dataPoint, etc. }
+text: text
+created_by: uuid (FK to users via Clerk)
+created_at: timestamp
+updated_at: timestamp
+resolved: boolean (default false)
+resolved_by: uuid (nullable)
+resolved_at: timestamp (nullable)
+parent_id: uuid (nullable, FK to comments for replies)
+mentions: text[] (array of user IDs)
+```
+
+### Implementation Files
+
+#### File: `/lib/db/schema.ts` (additions)
+
+```typescript
+export const commentAnchorTypeEnum = pgEnum('comment_anchor_type', [
+  'widget',
+  'chart',
+  'tableCell',
+  'metricCard',
+  'dataPoint'
+])
+
+export const comments = pgTable('comments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }).notNull(),
+  anchorType: commentAnchorTypeEnum('anchor_type').notNull(),
+  anchorTargetId: varchar('anchor_target_id', { length: 255 }).notNull(),
+  anchorMetadata: jsonb('anchor_metadata').default({}), // { rowKey, columnKey, xPct, yPct, etc. }
+  text: text('text').notNull(),
+  createdBy: varchar('created_by', { length: 255 }).notNull(), // Clerk user ID
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  resolved: boolean('resolved').default(false).notNull(),
+  resolvedBy: varchar('resolved_by', { length: 255 }),
+  resolvedAt: timestamp('resolved_at'),
+  parentId: uuid('parent_id').references(() => comments.id, { onDelete: 'cascade' }),
+  mentions: text('mentions').array(),
+})
+```
+
+#### File: `/components/collaboration/comment-pins-overlay.tsx`
+
+```typescript
+'use client'
+
+import { useState, useRef, useEffect } from 'react'
+import { useAnchoredComments } from '@/hooks/useAnchoredComments'
+import { MessageCircle, Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+interface CommentPinsOverlayProps {
+  anchorType: 'widget' | 'chart' | 'tableCell' | 'metricCard'
+  anchorTargetId: string
+  organizationId: string
+  children: React.ReactNode
+  enableRightClick?: boolean
+}
+
+export function CommentPinsOverlay({
+  anchorType,
+  anchorTargetId,
+  organizationId,
+  children,
+  enableRightClick = true,
+}: CommentPinsOverlayProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  const [activeThread, setActiveThread] = useState<string | null>(null)
+  
+  const { comments, addComment, resolveComment } = useAnchoredComments({
+    organizationId,
+    anchorType,
+    anchorTargetId,
+  })
+
+  const handleRightClick = (e: React.MouseEvent) => {
+    if (!enableRightClick) return
+    
+    e.preventDefault()
+    e.stopPropagation()
+    
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    
+    const xPct = ((e.clientX - rect.left) / rect.width) * 100
+    const yPct = ((e.clientY - rect.top) / rect.height) * 100
+    
+    setContextMenu({ x: xPct, y: yPct })
+  }
+
+  const handleAddComment = async (text: string) => {
+    if (!contextMenu) return
+    
+    await addComment({
+      text,
+      anchorMetadata: {
+        xPct: contextMenu.x,
+        yPct: contextMenu.y,
+      },
+    })
+    
+    setContextMenu(null)
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative"
+      onContextMenu={handleRightClick}
+    >
+      {children}
+      
+      {/* Render comment pins */}
+      {comments.map((comment) => {
+        const metadata = comment.anchorMetadata as { xPct?: number; yPct?: number }
+        if (!metadata.xPct || !metadata.yPct) return null
+        
+        return (
+          <CommentPin
+            key={comment.id}
+            comment={comment}
+            xPct={metadata.xPct}
+            yPct={metadata.yPct}
+            isActive={activeThread === comment.id}
+            onClick={() => setActiveThread(comment.id)}
+            onResolve={() => resolveComment(comment.id)}
+          />
+        )
+      })}
+      
+      {/* Context menu for adding comment */}
+      {contextMenu && (
+        <CommentComposer
+          xPct={contextMenu.x}
+          yPct={contextMenu.y}
+          onSubmit={handleAddComment}
+          onCancel={() => setContextMenu(null)}
+        />
+      )}
+      
+      {/* Active thread popover */}
+      {activeThread && (
+        <CommentThread
+          commentId={activeThread}
+          onClose={() => setActiveThread(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+function CommentPin({
+  comment,
+  xPct,
+  yPct,
+  isActive,
+  onClick,
+  onResolve,
+}: {
+  comment: any
+  xPct: number
+  yPct: number
+  isActive: boolean
+  onClick: () => void
+  onResolve: () => void
+}) {
+  return (
+    <button
+      className={cn(
+        'absolute w-6 h-6 rounded-full border-2 flex items-center justify-center',
+        'transition-all hover:scale-110 shadow-md z-10',
+        comment.resolved
+          ? 'bg-gray-200 border-gray-400'
+          : isActive
+          ? 'bg-blue-500 border-blue-600'
+          : 'bg-yellow-400 border-yellow-500'
+      )}
+      style={{
+        left: `${xPct}%`,
+        top: `${yPct}%`,
+        transform: 'translate(-50%, -50%)',
+      }}
+      onClick={onClick}
+    >
+      {comment.resolved ? (
+        <Check className="w-4 h-4 text-gray-600" />
+      ) : (
+        <MessageCircle className="w-4 h-4 text-white" />
+      )}
+      {!comment.resolved && comment.replyCount > 0 && (
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+          {comment.replyCount}
+        </span>
+      )}
+    </button>
+  )
+}
+
+function CommentComposer({
+  xPct,
+  yPct,
+  onSubmit,
+  onCancel,
+}: {
+  xPct: number
+  yPct: number
+  onSubmit: (text: string) => void
+  onCancel: () => void
+}) {
+  const [text, setText] = useState('')
+  
+  return (
+    <div
+      className="absolute z-20 bg-white rounded-lg shadow-xl border p-3 w-64"
+      style={{
+        left: `${xPct}%`,
+        top: `${yPct}%`,
+        transform: 'translate(-50%, -100%) translateY(-8px)',
+      }}
+    >
+      <textarea
+        autoFocus
+        className="w-full border rounded p-2 text-sm resize-none"
+        rows={3}
+        placeholder="Add a comment..."
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+      <div className="flex justify-end gap-2 mt-2">
+        <button
+          className="text-sm text-gray-600 hover:text-gray-800"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <button
+          className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+          onClick={() => {
+            if (text.trim()) onSubmit(text.trim())
+          }}
+        >
+          Comment
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function CommentThread({ commentId, onClose }: { commentId: string; onClose: () => void }) {
+  // Implementation for showing the full comment thread with replies
+  // This would fetch the comment and all replies, show them in a popover
+  return (
+    <div className="absolute z-30 bg-white rounded-lg shadow-xl border p-4 w-80">
+      {/* Thread UI */}
+    </div>
+  )
+}
+```
+
+#### File: `/hooks/useAnchoredComments.ts`
+
+```typescript
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
+
+interface UseAnchoredCommentsProps {
+  organizationId: string
+  anchorType: string
+  anchorTargetId: string
+}
+
+export function useAnchoredComments({
+  organizationId,
+  anchorType,
+  anchorTargetId,
+}: UseAnchoredCommentsProps) {
+  const { userId } = useAuth()
+  const [comments, setComments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchComments()
+  }, [organizationId, anchorType, anchorTargetId])
+
+  const fetchComments = async () => {
+    try {
+      const response = await fetch(
+        `/api/comments?organizationId=${organizationId}&anchorType=${anchorType}&anchorTargetId=${anchorTargetId}`
+      )
+      const data = await response.json()
+      setComments(data)
+    } catch (error) {
+      console.error('Failed to fetch comments:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const addComment = async ({
+    text,
+    anchorMetadata,
+    parentId,
+    mentions,
+  }: {
+    text: string
+    anchorMetadata?: any
+    parentId?: string
+    mentions?: string[]
+  }) => {
+    try {
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationId,
+          anchorType,
+          anchorTargetId,
+          anchorMetadata,
+          text,
+          parentId,
+          mentions,
+        }),
+      })
+      
+      const newComment = await response.json()
+      setComments((prev) => [...prev, newComment])
+      return newComment
+    } catch (error) {
+      console.error('Failed to add comment:', error)
+      throw error
+    }
+  }
+
+  const resolveComment = async (commentId: string) => {
+    try {
+      await fetch(`/api/comments/${commentId}/resolve`, {
+        method: 'PATCH',
+      })
+      
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId ? { ...c, resolved: true, resolvedBy: userId } : c
+        )
+      )
+    } catch (error) {
+      console.error('Failed to resolve comment:', error)
+      throw error
+    }
+  }
+
+  return {
+    comments,
+    loading,
+    addComment,
+    resolveComment,
+    refresh: fetchComments,
+  }
+}
+```
+
+#### File: `/app/api/comments/route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs'
+import { db } from '@/lib/db'
+import { comments } from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
+
+export async function GET(req: NextRequest) {
+  const { userId } = auth()
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { searchParams } = new URL(req.url)
+  const organizationId = searchParams.get('organizationId')
+  const anchorType = searchParams.get('anchorType')
+  const anchorTargetId = searchParams.get('anchorTargetId')
+
+  if (!organizationId || !anchorType || !anchorTargetId) {
+    return NextResponse.json({ error: 'Missing required params' }, { status: 400 })
+  }
+
+  const commentsList = await db
+    .select()
+    .from(comments)
+    .where(
+      and(
+        eq(comments.organizationId, organizationId),
+        eq(comments.anchorType, anchorType as any),
+        eq(comments.anchorTargetId, anchorTargetId)
+      )
+    )
+    .orderBy(comments.createdAt)
+
+  return NextResponse.json(commentsList)
+}
+
+export async function POST(req: NextRequest) {
+  const { userId } = auth()
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const body = await req.json()
+  const {
+    organizationId,
+    anchorType,
+    anchorTargetId,
+    anchorMetadata,
+    text,
+    parentId,
+    mentions,
+  } = body
+
+  const [comment] = await db
+    .insert(comments)
+    .values({
+      organizationId,
+      anchorType,
+      anchorTargetId,
+      anchorMetadata: anchorMetadata || {},
+      text,
+      createdBy: userId,
+      parentId,
+      mentions: mentions || [],
+    })
+    .returning()
+
+  // TODO: Send notifications to mentioned users
+
+  return NextResponse.json(comment)
+}
+```
+
+### Usage Example
+
+```typescript
+// In a dashboard component
+<CommentPinsOverlay
+  anchorType="chart"
+  anchorTargetId="monthly-trend-chart"
+  organizationId={currentOrg.id}
+  enableRightClick={hasPermission(Permission.ADD_COMMENTS)}
+>
+  <MonthlyTrendChart data={chartData} />
+</CommentPinsOverlay>
+
+// For table cells
+<CommentPinsOverlay
+  anchorType="tableCell"
+  anchorTargetId={`campaign-${campaign.id}-spend`}
+  organizationId={currentOrg.id}
+>
+  <div>${campaign.spend.toLocaleString()}</div>
+</CommentPinsOverlay>
+```
+
+### Real-Time Updates (Optional Enhancement)
+
+For real-time comment updates, add WebSocket support:
+
+```typescript
+// lib/websocket/comments.ts
+import { useEffect } from 'react'
+import { io } from 'socket.io-client'
+
+export function useRealtimeComments(organizationId: string, onUpdate: () => void) {
+  useEffect(() => {
+    const socket = io(process.env.NEXT_PUBLIC_WS_URL!)
+    
+    socket.emit('join-org', organizationId)
+    
+    socket.on('comment-added', onUpdate)
+    socket.on('comment-resolved', onUpdate)
+    
+    return () => {
+      socket.emit('leave-org', organizationId)
+      socket.disconnect()
+    }
+  }, [organizationId, onUpdate])
+}
+```
+
+---
+
 ## Testing Strategy
 
 ### Unit Tests
