@@ -11,6 +11,7 @@ Building a web dashboard to analyze ad spend vs. revenue/bonuses for a social-me
 ## 1. Assumptions & Clarifications
 
 ### Assumptions Made:
+
 - Amazon Associates provides monthly shipped revenue reports (manually downloadable)
 - Meta Ads provides daily spend/performance data (initially manual, later API)
 - Affiliate commissions are tracked separately from shipped revenue bonuses
@@ -21,6 +22,7 @@ Building a web dashboard to analyze ad spend vs. revenue/bonuses for a social-me
 - Bonus structure: Known thresholds (e.g., $1K shipped = $100 bonus, $5K = $500, etc.)
 
 ### Clarifying Questions for Implementation:
+
 1. **Bonus Calculation**: Are bonuses incremental (earn each tier) or replacement (higher tier replaces lower)?
 2. **Attribution Window**: What's the typical delay between ad click and Amazon commission/shipped revenue?
 3. **Data Access**: Do you currently have API access to Meta Ads Manager?
@@ -33,36 +35,45 @@ Building a web dashboard to analyze ad spend vs. revenue/bonuses for a social-me
 ### Core User Personas
 
 #### 1. **Founder/Owner** (Primary)
+
 **Jobs to be Done:**
+
 - Understand true profitability of ad spend
 - Decide monthly ad budget allocation
 - Track progress toward bonus thresholds
 - Assess overall business health
 
 **Key Needs:**
+
 - Quick "are ads profitable?" answer
 - Projection to end-of-month
 - Historical trend comparison
 
 #### 2. **Ad Manager** (Secondary)
+
 **Jobs to be Done:**
+
 - Daily performance monitoring
 - Campaign optimization decisions
 - Enter/update daily ad data
 - Identify underperforming ads to pause
 
 **Key Needs:**
+
 - Fast data entry workflow
 - Ad-level performance comparison
 - Clear spend vs. return metrics
 
 #### 3. **Team Member/Analyst** (Tertiary)
+
 **Jobs to be Done:**
+
 - View performance reports
 - Understand campaign context
 - Support decision-making with data
 
 **Key Needs:**
+
 - Read-only dashboard access
 - Filtered views by campaign
 - Shareable reports
@@ -76,27 +87,33 @@ Building a web dashboard to analyze ad spend vs. revenue/bonuses for a social-me
 **Goal**: Ship a functional dashboard that answers "are ads worth it?" with manual data entry.
 
 #### Core Features:
+
 1. **Auth & Organizations**
+
    - Clerk integration with organization support
    - Basic role system (Owner, Editor, Viewer)
    - Invite team members
 
 2. **Campaign & Ad Management**
+
    - CRUD operations for campaigns
    - CRUD operations for ads (linked to campaigns)
    - Basic metadata (name, status, platform, type)
 
 3. **Manual Data Entry**
+
    - Daily performance input form
    - Bulk entry for multiple ads/days
    - CSV import for historical data
 
 4. **Bonus Threshold Configuration**
+
    - Define monthly shipped revenue thresholds
    - Associate bonus amounts/percentages
    - Preview bonus calculation logic
 
 5. **Main Dashboard**
+
    - Current month summary cards (spend, revenue, ROAS, bonus progress)
    - Monthly trend chart (last 12 months)
    - Campaign performance table
@@ -109,6 +126,7 @@ Building a web dashboard to analyze ad spend vs. revenue/bonuses for a social-me
    - Spend efficiency by campaign
 
 #### MVP Success Criteria:
+
 - ✅ Can track 10+ campaigns with daily granularity
 - ✅ Calculate bonus-inclusive ROAS accurately
 - ✅ Enter a month's data in <15 minutes
@@ -121,29 +139,35 @@ Building a web dashboard to analyze ad spend vs. revenue/bonuses for a social-me
 **Goal**: Reduce manual work and add decision-support features.
 
 #### Features:
+
 1. **Meta Ads Integration**
+
    - OAuth connection to Meta Business
    - Automated daily data sync
    - Conflict resolution (manual vs. automated data)
    - Sync status indicators
 
 2. **Advanced Dashboard Views**
+
    - Ad-level detail pages
    - Campaign comparison mode
    - Stacked charts (by campaign, ad type)
    - Custom date range comparisons
 
 3. **Projections & Forecasting**
+
    - Linear projection to month-end
    - "Days until next bonus threshold"
    - Scenario modeling ("what if we cut/scale X?")
 
 4. **Enhanced Permissions**
+
    - Ad Manager role (edit ads, enter data only)
    - Finance role (view all, manage bonuses)
    - Granular permissions matrix
 
 5. **Export & Reporting**
+
    - PDF monthly reports
    - CSV data export
    - Scheduled email summaries
@@ -160,7 +184,9 @@ Building a web dashboard to analyze ad spend vs. revenue/bonuses for a social-me
 **Goal**: Multi-team support and additional affiliate networks.
 
 #### Features:
+
 1. **Anchored Comments & Collaboration** (Inspired by Google Sheets/Figma)
+
    - **Right-click to add comments** on any dashboard element
    - **Pinned hotspots** with visual indicators (dots/badges)
    - **Context anchoring** to charts, cards, table cells, specific data points
@@ -168,67 +194,80 @@ Building a web dashboard to analyze ad spend vs. revenue/bonuses for a social-me
    - **@mentions** with email/Slack notifications
    - **Activity log** tracking all comment activity
    - **Real-time updates** via WebSockets (optional)
-   
+
    **Technical Implementation:**
+
    - Anchor types: widget, chart, tableCell, metricCard, dataPoint
    - Store anchor metadata: widgetId, x/y percentages, row/column keys
    - Overlay layer renders hotspots relative to anchored elements
    - `useAnchoredComments` hook for comment management
    - `CommentPinsOverlay` component for visualization
-   
+
    **Data Model:**
+
    ```typescript
    type CommentAnchor =
-     | { kind: 'widget'; widgetId: string; xPct?: number; yPct?: number }
-     | { kind: 'chart'; chartId: string; dataPoint?: string; xPct?: number; yPct?: number }
-     | { kind: 'tableCell'; tableId: string; rowKey: string; columnKey: string }
-     | { kind: 'metricCard'; cardId: string }
-   
+     | { kind: "widget"; widgetId: string; xPct?: number; yPct?: number }
+     | {
+         kind: "chart";
+         chartId: string;
+         dataPoint?: string;
+         xPct?: number;
+         yPct?: number;
+       }
+     | { kind: "tableCell"; tableId: string; rowKey: string; columnKey: string }
+     | { kind: "metricCard"; cardId: string };
+
    type Comment = {
-     id: string
-     organizationId: string
-     anchor: CommentAnchor
-     text: string
-     createdBy: string
-     createdAt: timestamp
-     resolved: boolean
-     parentId?: string // for replies
-     mentions?: string[] // mentioned user IDs
-   }
+     id: string;
+     organizationId: string;
+     anchor: CommentAnchor;
+     text: string;
+     createdBy: string;
+     createdAt: timestamp;
+     resolved: boolean;
+     parentId?: string; // for replies
+     mentions?: string[]; // mentioned user IDs
+   };
    ```
-   
+
    **Implementation Details:**
+
    - **Context Menu Integration**: Use shadcn/ui `DropdownMenu` triggered on right-click (contextmenu event) for each dashboard widget
    - **Comment Composer**: Small modal/sheet positioned near click location using `Popover` or `Sheet` component
    - **Hotspot Rendering**: Absolute positioned elements within widget containers, using x/y percentages for precise positioning
    - **Overlay Layer**: Separate React component (`CommentPinsOverlay`) that queries comments by anchor and renders hotspots
    - **Real-time Sync**: Optional WebSocket integration via Supabase Realtime, or polling fallback
-   
+
    **Pre-Implementation Decisions Needed:**
+
    - Front-end framework confirmation (React/Next.js assumed)
    - Existing context menu/overlay system to integrate with
    - Current commenting API status (new feature vs. extending existing)
    - Dashboard widget structure (what are the "items" - chart widgets, tiles, table cells?)
    - Real-time requirements (WebSockets vs. refresh-to-see)
 
-
 2. **Additional Affiliate Networks**
+
    - Multi-affiliate support (Amazon, Impact, ShareASale, etc.)
    - Network-specific bonus structures
    - Cross-network attribution
 
 3. **Additional Ad Platforms**
+
    - Google Ads integration
    - TikTok Ads integration
    - Unified cross-platform view
 
 4. **Advanced Analytics**
+
    - Cohort analysis
    - Retention curves
    - LTV estimation
    - Creative performance patterns
 
 5. **Automation & Alerts**
+
    - Slack/email notifications
    - Threshold proximity alerts
    - Anomaly detection
@@ -258,6 +297,7 @@ Organizations
 ### Detailed Schema
 
 #### **organizations**
+
 ```sql
 id: uuid (PK)
 name: string
@@ -266,6 +306,7 @@ settings: jsonb (currency, timezone, etc.)
 ```
 
 #### **campaigns**
+
 ```sql
 id: uuid (PK)
 organization_id: uuid (FK)
@@ -280,6 +321,7 @@ metadata: jsonb (optional custom fields)
 ```
 
 #### **ads**
+
 ```sql
 id: uuid (PK)
 campaign_id: uuid (FK)
@@ -292,6 +334,7 @@ metadata: jsonb
 ```
 
 #### **daily_performance** (Fact Table - Grain: ad × date)
+
 ```sql
 id: uuid (PK)
 ad_id: uuid (FK)
@@ -310,6 +353,7 @@ UNIQUE (ad_id, date, data_source)
 ```
 
 #### **shipped_revenue** (Separate from daily_performance)
+
 ```sql
 id: uuid (PK)
 organization_id: uuid (FK)
@@ -324,6 +368,7 @@ UNIQUE (organization_id, affiliate_network, month)
 ```
 
 #### **bonus_structures**
+
 ```sql
 id: uuid (PK)
 organization_id: uuid (FK)
@@ -336,6 +381,7 @@ created_at: timestamp
 ```
 
 #### **roles_permissions** (Clerk + custom)
+
 ```sql
 user_id: string (Clerk user ID)
 organization_id: uuid (FK)
@@ -348,16 +394,19 @@ UNIQUE (user_id, organization_id)
 ### Key Metrics Definitions
 
 #### 1. **Basic ROAS**
+
 ```
 ROAS = Total Affiliate Revenue / Total Ad Spend
 ```
 
 #### 2. **Bonus-Inclusive ROAS ("True ROAS")**
+
 ```
 True ROAS = (Total Affiliate Revenue + Bonus Earned) / Total Ad Spend
 ```
 
 #### 3. **Projected Month-End Metrics**
+
 ```
 Projected Spend = Current Spend + (Avg Daily Spend × Days Remaining)
 Projected Revenue = Current Revenue + (Avg Daily Revenue × Days Remaining)
@@ -366,6 +415,7 @@ Projected Bonus = bonus_for_tier(Projected Shipped Revenue)
 ```
 
 #### 4. **Bonus Progress**
+
 ```
 Next Threshold = lowest threshold > current_shipped_revenue
 Progress % = (current_shipped_revenue / Next Threshold) × 100
@@ -373,6 +423,7 @@ Days to Next Threshold = (Next Threshold - Current) / Avg Daily Shipped Revenue
 ```
 
 #### 5. **Campaign Efficiency**
+
 ```
 Campaign ROAS = sum(campaign_revenue) / sum(campaign_spend)
 Ad ROAS = ad_revenue / ad_spend
@@ -381,11 +432,13 @@ Ad ROAS = ad_revenue / ad_spend
 ### Data Grain Decisions
 
 **Primary Grain**: `ad × date` (daily)
+
 - Allows flexibility for aggregation
 - Supports day-level trend analysis
 - Manageable data volume (<50K rows/year for 100 ads)
 
 **Shipped Revenue Grain**: `organization × affiliate_network × month`
+
 - Matches Amazon reporting cadence
 - Simplifies bonus calculation
 - Allocated proportionally to ads based on attributed revenue
@@ -444,6 +497,7 @@ Ad ROAS = ad_revenue / ad_spend
 ### Key UI Flows
 
 #### **Flow 1: Daily Data Entry**
+
 ```
 1. Click "Enter Daily Data" button
 2. Modal/page opens with:
@@ -459,6 +513,7 @@ Speed target: 20 ads in <3 minutes
 ```
 
 #### **Flow 2: Create Campaign & Ads**
+
 ```
 1. Click "+ New Campaign"
 2. Slide-over form:
@@ -474,6 +529,7 @@ Speed target: Campaign + 5 ads in <2 minutes
 ```
 
 #### **Flow 3: Configure Bonus Structure**
+
 ```
 1. Settings → Bonus Structures
 2. Card per affiliate network
@@ -487,6 +543,7 @@ Edge case: Show warning if mid-month change
 ```
 
 #### **Flow 4: View Campaign Deep Dive**
+
 ```
 1. Click campaign name from table
 2. Campaign detail page:
@@ -500,20 +557,20 @@ Edge case: Show warning if mid-month change
 
 ### shadcn/ui Component Mapping
 
-| UI Element | shadcn Component |
-|------------|------------------|
-| Navigation | `NavigationMenu` |
-| Summary Cards | `Card`, `CardHeader`, `CardContent` |
-| Filters | `Select`, `Popover` + `Calendar` |
-| Tables | `Table` + `DataTable` pattern |
-| Charts | `recharts` (external, common with shadcn) |
-| Forms | `Form`, `Input`, `Button` |
-| Modals | `Dialog` or `Sheet` (slide-overs) |
-| Date Pickers | `Calendar` + `Popover` |
-| Toasts | `Toast`, `useToast` |
-| Dropdown Menus | `DropdownMenu` |
-| Role Badges | `Badge` |
-| Data Entry Table | `Table` + `Input` (editable cells) |
+| UI Element       | shadcn Component                          |
+| ---------------- | ----------------------------------------- |
+| Navigation       | `NavigationMenu`                          |
+| Summary Cards    | `Card`, `CardHeader`, `CardContent`       |
+| Filters          | `Select`, `Popover` + `Calendar`          |
+| Tables           | `Table` + `DataTable` pattern             |
+| Charts           | `recharts` (external, common with shadcn) |
+| Forms            | `Form`, `Input`, `Button`                 |
+| Modals           | `Dialog` or `Sheet` (slide-overs)         |
+| Date Pickers     | `Calendar` + `Popover`                    |
+| Toasts           | `Toast`, `useToast`                       |
+| Dropdown Menus   | `DropdownMenu`                            |
+| Role Badges      | `Badge`                                   |
+| Data Entry Table | `Table` + `Input` (editable cells)        |
 
 ### Design Principles
 
@@ -543,7 +600,9 @@ APIs:      Next.js API routes / Server Actions
 ### Stack Justification
 
 #### **Database: Supabase (PostgreSQL)**
+
 **Why:**
+
 - Managed Postgres (simple setup, good performance)
 - Built-in auth support (can work alongside Clerk)
 - Realtime subscriptions (future collaboration features)
@@ -553,7 +612,9 @@ APIs:      Next.js API routes / Server Actions
 **Alternative:** Neon (serverless Postgres, better cold starts)
 
 #### **Auth: Clerk**
+
 **Why:**
+
 - Organizations/teams built-in
 - Role-based access control
 - Beautiful pre-built UI components
@@ -561,7 +622,9 @@ APIs:      Next.js API routes / Server Actions
 - Easy user management
 
 #### **Next.js 14 App Router**
+
 **Why:**
+
 - Server Components = faster initial loads
 - Server Actions = simpler data mutations
 - Built-in API routes
@@ -569,13 +632,16 @@ APIs:      Next.js API routes / Server Actions
 - Great DX with TypeScript
 
 #### **Drizzle ORM** (preferred) or Prisma
+
 **Why Drizzle:**
+
 - Lighter than Prisma
 - Better TypeScript inference
 - SQL-like syntax (easier to optimize)
 - Smaller bundle size
 
 **Why Prisma (alternative):**
+
 - More mature ecosystem
 - Better migration tooling
 - Prisma Studio for DB browsing
@@ -626,6 +692,7 @@ APIs:      Next.js API routes / Server Actions
 ### Key Architectural Decisions
 
 #### 1. **Separation of Concerns**
+
 ```
 UI Layer (components)
     ↓
@@ -637,6 +704,7 @@ Data Layer (ORM / raw SQL)
 ```
 
 **Example:**
+
 ```typescript
 // Service layer - /lib/services/metrics.ts
 export async function calculateTrueROAS(
@@ -646,14 +714,14 @@ export async function calculateTrueROAS(
 ): Promise<ROASResult> {
   // 1. Fetch ad spend & revenue
   const performance = await db.query.dailyPerformance...
-  
+
   // 2. Fetch shipped revenue & bonus structure
   const shipped = await db.query.shippedRevenue...
   const bonuses = await db.query.bonusStructures...
-  
+
   // 3. Calculate bonus earned
   const bonusEarned = calculateBonusFromTiers(shipped, bonuses)
-  
+
   // 4. Return computed metrics
   return {
     spend: sum(performance.spend),
@@ -668,11 +736,13 @@ export async function calculateTrueROAS(
 #### 2. **Data Access Patterns**
 
 **For Dashboards (read-heavy):**
+
 - Use Server Components with direct DB queries
 - Cache with `unstable_cache` for expensive calculations
 - Revalidate on data mutations
 
 **For Data Entry (write-heavy):**
+
 - Use Server Actions for mutations
 - Optimistic UI updates
 - Validate on server, show errors inline
@@ -680,28 +750,30 @@ export async function calculateTrueROAS(
 #### 3. **Extensibility Strategy**
 
 **Module Registration Pattern:**
+
 ```typescript
 // /lib/modules/registry.ts
 export const modules = [
   {
-    id: 'ad-analytics',
-    name: 'Ad Analytics',
-    path: '/dashboard',
+    id: "ad-analytics",
+    name: "Ad Analytics",
+    path: "/dashboard",
     icon: ChartBarIcon,
-    permissions: ['view_analytics']
+    permissions: ["view_analytics"],
   },
   // Future modules plugged in here
   {
-    id: 'creative-testing',
-    name: 'Creative Testing',
-    path: '/creative-testing',
+    id: "creative-testing",
+    name: "Creative Testing",
+    path: "/creative-testing",
     icon: BeakerIcon,
-    permissions: ['view_creatives']
-  }
-]
+    permissions: ["view_creatives"],
+  },
+];
 ```
 
 **Benefits:**
+
 - Easy to add new tools without touching core
 - Consistent navigation
 - Per-module permissions
@@ -711,12 +783,12 @@ export const modules = [
 ```typescript
 // /lib/auth/permissions.ts
 export enum Permission {
-  VIEW_DASHBOARD = 'view_dashboard',
-  EDIT_CAMPAIGNS = 'edit_campaigns',
-  ENTER_DATA = 'enter_data',
-  MANAGE_BONUSES = 'manage_bonuses',
-  MANAGE_ORG = 'manage_org',
-  MANAGE_INTEGRATIONS = 'manage_integrations'
+  VIEW_DASHBOARD = "view_dashboard",
+  EDIT_CAMPAIGNS = "edit_campaigns",
+  ENTER_DATA = "enter_data",
+  MANAGE_BONUSES = "manage_bonuses",
+  MANAGE_ORG = "manage_org",
+  MANAGE_INTEGRATIONS = "manage_integrations",
 }
 
 export const rolePermissions: Record<Role, Permission[]> = {
@@ -724,16 +796,16 @@ export const rolePermissions: Record<Role, Permission[]> = {
   editor: [VIEW_DASHBOARD, EDIT_CAMPAIGNS, ENTER_DATA],
   ad_manager: [VIEW_DASHBOARD, ENTER_DATA],
   finance: [VIEW_DASHBOARD, MANAGE_BONUSES],
-  viewer: [VIEW_DASHBOARD]
-}
+  viewer: [VIEW_DASHBOARD],
+};
 
 export async function hasPermission(
   userId: string,
   orgId: string,
   permission: Permission
 ): Promise<boolean> {
-  const role = await getUserRole(userId, orgId)
-  return rolePermissions[role].includes(permission)
+  const role = await getUserRole(userId, orgId);
+  return rolePermissions[role].includes(permission);
 }
 ```
 
@@ -742,16 +814,25 @@ export async function hasPermission(
 ```typescript
 // /lib/integrations/base.ts
 interface DataProvider {
-  authenticate(): Promise<void>
-  fetchDailyPerformance(startDate: Date, endDate: Date): Promise<PerformanceData[]>
-  sync(): Promise<SyncResult>
+  authenticate(): Promise<void>;
+  fetchDailyPerformance(
+    startDate: Date,
+    endDate: Date
+  ): Promise<PerformanceData[]>;
+  sync(): Promise<SyncResult>;
 }
 
 // /lib/integrations/meta.ts
 class MetaAdsProvider implements DataProvider {
-  async authenticate() { /* OAuth flow */ }
-  async fetchDailyPerformance() { /* Meta API */ }
-  async sync() { /* Handle conflicts */ }
+  async authenticate() {
+    /* OAuth flow */
+  }
+  async fetchDailyPerformance() {
+    /* Meta API */
+  }
+  async sync() {
+    /* Handle conflicts */
+  }
 }
 
 // Easy to add Google, TikTok, etc.
@@ -859,21 +940,21 @@ class MetaAdsProvider implements DataProvider {
 
 ### Technical Risks
 
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Meta API complexity | Medium | High | Start with manual CSV import, defer to Phase 2 |
-| Bonus calculation edge cases | Medium | Medium | Thoroughly test with real historical data |
-| Performance with large datasets | Low | Medium | Use proper indexes, pagination, caching |
-| Clerk org switching lag | Low | Low | Use client-side caching |
+| Risk                            | Probability | Impact | Mitigation                                     |
+| ------------------------------- | ----------- | ------ | ---------------------------------------------- |
+| Meta API complexity             | Medium      | High   | Start with manual CSV import, defer to Phase 2 |
+| Bonus calculation edge cases    | Medium      | Medium | Thoroughly test with real historical data      |
+| Performance with large datasets | Low         | Medium | Use proper indexes, pagination, caching        |
+| Clerk org switching lag         | Low         | Low    | Use client-side caching                        |
 
 ### Product Risks
 
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Users find data entry too slow | Medium | High | Extensive UX testing, keyboard shortcuts |
-| Projected metrics inaccurate | Medium | Medium | Show confidence intervals, allow manual override |
-| Bonus structure changes frequently | Low | Medium | Make config easy to update, support effective dates |
-| Need multi-currency sooner than expected | Low | Medium | Design schema to add currency field easily |
+| Risk                                     | Probability | Impact | Mitigation                                          |
+| ---------------------------------------- | ----------- | ------ | --------------------------------------------------- |
+| Users find data entry too slow           | Medium      | High   | Extensive UX testing, keyboard shortcuts            |
+| Projected metrics inaccurate             | Medium      | Medium | Show confidence intervals, allow manual override    |
+| Bonus structure changes frequently       | Low         | Medium | Make config easy to update, support effective dates |
+| Need multi-currency sooner than expected | Low         | Medium | Design schema to add currency field easily          |
 
 ---
 
@@ -920,6 +1001,7 @@ class MetaAdsProvider implements DataProvider {
 ## 11. Next Steps
 
 ### Immediate (This Week)
+
 1. ✅ Review this plan and validate assumptions
 2. Address open questions above
 3. Set up development environment
@@ -927,11 +1009,13 @@ class MetaAdsProvider implements DataProvider {
 5. Begin Week 1 tasks
 
 ### This Month
+
 1. Complete foundation (Weeks 1-2)
 2. Ship data layer (Weeks 3-4)
 3. Review progress and adjust timeline
 
 ### This Quarter
+
 1. Launch MVP to first users
 2. Gather feedback and iterate
 3. Begin Phase 2 development
@@ -952,9 +1036,10 @@ CREATE INDEX idx_shipped_revenue_org_month ON shipped_revenue(organization_id, m
 ## Appendix B: Key SQL Queries
 
 ### Monthly Summary Query
+
 ```sql
 WITH monthly_performance AS (
-  SELECT 
+  SELECT
     DATE_TRUNC('month', dp.date) as month,
     SUM(dp.spend) as total_spend,
     SUM(dp.affiliate_revenue) as total_revenue
@@ -966,7 +1051,7 @@ WITH monthly_performance AS (
   GROUP BY DATE_TRUNC('month', dp.date)
 ),
 bonuses AS (
-  SELECT 
+  SELECT
     month,
     shipped_revenue,
     calculate_bonus(shipped_revenue, bonus_structure) as bonus_amount
@@ -974,7 +1059,7 @@ bonuses AS (
   WHERE sr.organization_id = $1
     AND sr.month >= $2 AND sr.month <= $3
 )
-SELECT 
+SELECT
   mp.month,
   mp.total_spend,
   mp.total_revenue,
@@ -991,8 +1076,6 @@ ORDER BY mp.month DESC;
 
 **End of Project Plan**
 
-*Last Updated: 2025-11-24*
-*Version: 1.0*
-*Owner: Product Team*
-
-
+_Last Updated: 2025-11-24_
+_Version: 1.0_
+_Owner: Product Team_

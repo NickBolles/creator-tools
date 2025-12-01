@@ -424,9 +424,11 @@ Monitoring
 ## 💬 Anchored Comments Feature (Phase 3)
 
 ### Concept
+
 Google Sheets/Figma-style comment pins anchored to dashboard elements via right-click.
 
 ### Quick Implementation
+
 ```typescript
 // Wrap any dashboard element
 <CommentPinsOverlay
@@ -439,28 +441,36 @@ Google Sheets/Figma-style comment pins anchored to dashboard elements via right-
 ```
 
 ### Anchor Types
+
 - `widget` - Dashboard cards/widgets
-- `chart` - Charts with data point anchoring  
+- `chart` - Charts with data point anchoring
 - `tableCell` - Specific table cells (row + column)
 - `metricCard` - Summary metric cards
 
 ### Data Model
+
 ```typescript
 type Comment = {
-  id: string
+  id: string;
   anchor: {
-    kind: 'widget' | 'chart' | 'tableCell' | 'metricCard'
-    targetId: string
-    metadata: { xPct?: number; yPct?: number; rowKey?: string; columnKey?: string }
-  }
-  text: string
-  resolved: boolean
-  parentId?: string // for replies
-  mentions?: string[]
-}
+    kind: "widget" | "chart" | "tableCell" | "metricCard";
+    targetId: string;
+    metadata: {
+      xPct?: number;
+      yPct?: number;
+      rowKey?: string;
+      columnKey?: string;
+    };
+  };
+  text: string;
+  resolved: boolean;
+  parentId?: string; // for replies
+  mentions?: string[];
+};
 ```
 
 ### Key Features
+
 - Right-click to add comment
 - Visual pins/hotspots with badges
 - Threading with replies
