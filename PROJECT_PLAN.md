@@ -1,1081 +1,850 @@
-# Ad Analytics Dashboard - Comprehensive Project Plan
+# Ad Performance Analytics Dashboard - Comprehensive Project Plan
 
-## Executive Summary
-
-Building a web dashboard to analyze ad spend vs. revenue/bonuses for a social-media-driven affiliate business. The platform will help calculate "true ROAS" including Amazon stepped bonuses and support daily ad management decisions.
-
-**Timeline Estimate**: MVP in 6-8 weeks, v1.1 in 10-12 weeks total
-
----
-
-## 1. Assumptions & Clarifications
-
-### Assumptions Made:
-
-- Amazon Associates provides monthly shipped revenue reports (manually downloadable)
-- Meta Ads provides daily spend/performance data (initially manual, later API)
-- Affiliate commissions are tracked separately from shipped revenue bonuses
-- Primary users: 1-5 person team, desktop-first usage
-- Data retention: Minimum 24 months of historical data
-- Bonus thresholds are monthly and reset each month
-- Single currency (USD) for V1
-- Bonus structure: Known thresholds (e.g., $1K shipped = $100 bonus, $5K = $500, etc.)
-
-### Clarifying Questions for Implementation:
-
-1. **Bonus Calculation**: Are bonuses incremental (earn each tier) or replacement (higher tier replaces lower)?
-2. **Attribution Window**: What's the typical delay between ad click and Amazon commission/shipped revenue?
-3. **Data Access**: Do you currently have API access to Meta Ads Manager?
-4. **Historical Data**: How much historical data exists to migrate?
+## Table of Contents
+1. [Assumptions & Clarifying Questions](#assumptions--clarifying-questions)
+2. [Product Overview & Personas](#product-overview--personas)
+3. [Phased Feature Roadmap](#phased-feature-roadmap)
+4. [Data Model & Metrics](#data-model--metrics)
+5. [UX/UI Design & Key Flows](#uxui-design--key-flows)
+6. [Technical Architecture](#technical-architecture)
+7. [Implementation Phases](#implementation-phases)
 
 ---
 
-## 2. Product Overview & User Personas
+## Assumptions & Clarifying Questions
 
-### Core User Personas
+### Key Assumptions
+1. **Data Frequency**: Daily data entry/aggregation by ad is sufficient (not hourly or real-time)
+2. **Bonus Structure**: Stepped bonuses are calculated monthly based on cumulative shipped revenue thresholds
+3. **Attribution Window**: Direct ad-attributed commission (no multi-touch attribution in V1)
+4. **Amazon Integration**: Manual entry initially; API integration is Phase 2
+5. **Team Size**: Small team (3-10 users) initially, scaling to larger teams later
+6. **Data Retention**: Historical data kept indefinitely for trend analysis
 
-#### 1. **Founder/Owner** (Primary)
-
-**Jobs to be Done:**
-
-- Understand true profitability of ad spend
-- Decide monthly ad budget allocation
-- Track progress toward bonus thresholds
-- Assess overall business health
-
-**Key Needs:**
-
-- Quick "are ads profitable?" answer
-- Projection to end-of-month
-- Historical trend comparison
-
-#### 2. **Ad Manager** (Secondary)
-
-**Jobs to be Done:**
-
-- Daily performance monitoring
-- Campaign optimization decisions
-- Enter/update daily ad data
-- Identify underperforming ads to pause
-
-**Key Needs:**
-
-- Fast data entry workflow
-- Ad-level performance comparison
-- Clear spend vs. return metrics
-
-#### 3. **Team Member/Analyst** (Tertiary)
-
-**Jobs to be Done:**
-
-- View performance reports
-- Understand campaign context
-- Support decision-making with data
-
-**Key Needs:**
-
-- Read-only dashboard access
-- Filtered views by campaign
-- Shareable reports
+### Clarifying Questions (To Resolve Before Implementation)
+1. **Bonus Calculation Timing**: Are bonuses calculated at month-end only, or can they be projected mid-month?
+2. **Bonus Applicability**: Do bonuses apply to all revenue or only ad-attributed revenue?
+3. **Multiple Amazon Accounts**: Does the business use multiple Amazon affiliate accounts/programs?
+4. **Data Import Format**: Preferred format for bulk data import (CSV, Excel, JSON)?
+5. **Meta Ads API Scope**: Which Meta Ads metrics are most critical (impressions, clicks, conversions, etc.)?
 
 ---
 
-## 3. Phased Development Roadmap
+## Product Overview & Personas
 
-### **Phase 1: MVP (Weeks 1-8)** 🎯
+### Core Value Proposition
+A dashboard that calculates **true ROAS** by combining direct affiliate commissions with stepped bonus structures, enabling data-driven decisions about ad spend allocation.
 
-**Goal**: Ship a functional dashboard that answers "are ads worth it?" with manual data entry.
+### User Personas
 
-#### Core Features:
+#### 1. Founder/Owner
+- **Primary Goals**: Understand overall business health, ROI, and strategic direction
+- **Key Jobs-to-be-Done**:
+  - Quickly assess if ad spend is profitable (including bonuses)
+  - Identify which campaigns/ads to scale or cut
+  - Review month-over-month trends
+- **Usage Pattern**: Daily check-ins, weekly deep dives
+- **Permissions**: Full access (Owner role)
 
-1. **Auth & Organizations**
+#### 2. Ad Manager
+- **Primary Goals**: Optimize ad performance, manage campaigns, enter daily data
+- **Key Jobs-to-be-Done**:
+  - Enter daily performance data efficiently
+  - Monitor campaign performance
+  - Identify underperforming ads
+  - Test new campaigns/ads
+- **Usage Pattern**: Daily data entry, frequent monitoring
+- **Permissions**: Campaign/ad management, data entry (Editor/Ad Manager role)
 
-   - Clerk integration with organization support
-   - Basic role system (Owner, Editor, Viewer)
-   - Invite team members
+#### 3. Analyst/Finance
+- **Primary Goals**: Accurate reporting, financial projections, bonus calculations
+- **Key Jobs-to-be-Done**:
+  - Verify bonus calculations
+  - Generate monthly reports
+  - Project end-of-month metrics
+  - Audit data accuracy
+- **Usage Pattern**: Weekly/monthly reviews
+- **Permissions**: View access, potentially Editor role
+
+---
+
+## Phased Feature Roadmap
+
+### Phase 1: MVP (Core Foundation)
+**Goal**: Functional dashboard with manual data entry, basic analytics, and bonus calculations
+
+#### Must-Have Features
+1. **Authentication & Organizations**
+   - User sign-up/login
+   - Organization creation
+   - Basic role management (Owner, Editor, Viewer)
 
 2. **Campaign & Ad Management**
-
-   - CRUD operations for campaigns
-   - CRUD operations for ads (linked to campaigns)
-   - Basic metadata (name, status, platform, type)
+   - Create/edit/delete campaigns
+   - Create/edit/delete ads within campaigns
+   - Basic metadata (name, description, status, ad type)
 
 3. **Manual Data Entry**
+   - Daily performance entry by ad
+   - Bulk entry interface (multiple ads, multiple days)
+   - Edit/delete historical entries
+   - Data validation (prevent duplicates, validate dates)
 
-   - Daily performance input form
-   - Bulk entry for multiple ads/days
-   - CSV import for historical data
+4. **Core Metrics Dashboard**
+   - Current month summary (spend, revenue, shipped revenue, ROAS)
+   - Projected end-of-month metrics
+   - Time-series chart (daily totals)
+   - Basic filters (date range, campaign, ad)
 
-4. **Bonus Threshold Configuration**
+5. **Bonus Configuration**
+   - Define shipped revenue thresholds
+   - Set bonus amounts/percentages per threshold
+   - Visualize bonus tiers
 
-   - Define monthly shipped revenue thresholds
-   - Associate bonus amounts/percentages
-   - Preview bonus calculation logic
+6. **ROAS Calculations**
+   - Standard ROAS (revenue / spend)
+   - True ROAS (revenue + bonuses) / spend
+   - Display both metrics prominently
 
-5. **Main Dashboard**
+### Phase 2: Enhanced Analytics (v1.1)
+**Goal**: Deeper insights and better decision support
 
-   - Current month summary cards (spend, revenue, ROAS, bonus progress)
-   - Monthly trend chart (last 12 months)
-   - Campaign performance table
-   - Simple filters (date range, campaign, status)
-
-6. **Basic Metrics**
-   - ROAS (without bonuses)
-   - True ROAS (including bonuses)
-   - Month-to-date vs. projected end-of-month
-   - Spend efficiency by campaign
-
-#### MVP Success Criteria:
-
-- ✅ Can track 10+ campaigns with daily granularity
-- ✅ Calculate bonus-inclusive ROAS accurately
-- ✅ Enter a month's data in <15 minutes
-- ✅ Answer "should we increase/decrease spend?" in <30 seconds
-
----
-
-### **Phase 2: Enhanced Features (Weeks 9-12)** 📈
-
-**Goal**: Reduce manual work and add decision-support features.
-
-#### Features:
-
-1. **Meta Ads Integration**
-
-   - OAuth connection to Meta Business
-   - Automated daily data sync
-   - Conflict resolution (manual vs. automated data)
-   - Sync status indicators
-
-2. **Advanced Dashboard Views**
-
-   - Ad-level detail pages
-   - Campaign comparison mode
-   - Stacked charts (by campaign, ad type)
+#### Features
+1. **Advanced Filtering & Segmentation**
+   - Filter by ad type, campaign status
+   - Compare multiple campaigns/ads side-by-side
    - Custom date range comparisons
 
-3. **Projections & Forecasting**
+2. **Performance Insights**
+   - Top/bottom performers identification
+   - Trend indicators (improving/declining)
+   - Anomaly detection (unusual spikes/drops)
 
-   - Linear projection to month-end
-   - "Days until next bonus threshold"
-   - Scenario modeling ("what if we cut/scale X?")
+3. **Export & Reporting**
+   - Export data to CSV
+   - Generate PDF reports
+   - Scheduled email reports (optional)
 
-4. **Enhanced Permissions**
+4. **Data Import**
+   - CSV/Excel import for bulk data entry
+   - Template download
+   - Import validation and error handling
 
-   - Ad Manager role (edit ads, enter data only)
-   - Finance role (view all, manage bonuses)
-   - Granular permissions matrix
+### Phase 3: Meta Ads Integration (v1.2)
+**Goal**: Automated data collection from Meta Ads
 
-5. **Export & Reporting**
+#### Features
+1. **Meta Ads API Integration**
+   - Connect Meta Ads account
+   - Automated daily data sync
+   - Map Meta campaigns/ads to internal campaigns/ads
 
-   - PDF monthly reports
-   - CSV data export
-   - Scheduled email summaries
+2. **Data Sync Management**
+   - Manual sync trigger
+   - Conflict resolution (manual vs automated data)
+   - Sync history and logs
 
-6. **Deep Links & Sharing**
-   - Shareable URLs with filters preserved
-   - Bookmark key views
-   - Team dashboard presets
+3. **Enhanced Meta Metrics**
+   - Impressions, clicks, CTR
+   - Cost per click, cost per conversion
+   - Meta-specific performance metrics
 
----
+### Phase 4: Collaboration & Notes (v2.0)
+**Goal**: Team collaboration and context
 
-### **Phase 3: Collaboration & Scale (Weeks 13+)** 🚀
+#### Features
+1. **Notes & Comments**
+   - Notes on campaigns, ads, daily performance
+   - Comment threads
+   - @mentions and notifications
 
-**Goal**: Multi-team support and additional affiliate networks.
+2. **Activity Feed**
+   - Recent changes and updates
+   - Team activity log
 
-#### Features:
+3. **Advanced Permissions**
+   - Granular role permissions
+   - Custom roles
+   - Permission inheritance
 
-1. **Anchored Comments & Collaboration** (Inspired by Google Sheets/Figma)
+### Phase 5: Multi-Channel & Advanced Features (v3.0+)
+**Goal**: Extend to multiple ad channels and affiliate partners
 
-   - **Right-click to add comments** on any dashboard element
-   - **Pinned hotspots** with visual indicators (dots/badges)
-   - **Context anchoring** to charts, cards, table cells, specific data points
-   - **Comment threads** with replies and resolve state
-   - **@mentions** with email/Slack notifications
-   - **Activity log** tracking all comment activity
-   - **Real-time updates** via WebSockets (optional)
-
-   **Technical Implementation:**
-
-   - Anchor types: widget, chart, tableCell, metricCard, dataPoint
-   - Store anchor metadata: widgetId, x/y percentages, row/column keys
-   - Overlay layer renders hotspots relative to anchored elements
-   - `useAnchoredComments` hook for comment management
-   - `CommentPinsOverlay` component for visualization
-
-   **Data Model:**
-
-   ```typescript
-   type CommentAnchor =
-     | { kind: "widget"; widgetId: string; xPct?: number; yPct?: number }
-     | {
-         kind: "chart";
-         chartId: string;
-         dataPoint?: string;
-         xPct?: number;
-         yPct?: number;
-       }
-     | { kind: "tableCell"; tableId: string; rowKey: string; columnKey: string }
-     | { kind: "metricCard"; cardId: string };
-
-   type Comment = {
-     id: string;
-     organizationId: string;
-     anchor: CommentAnchor;
-     text: string;
-     createdBy: string;
-     createdAt: timestamp;
-     resolved: boolean;
-     parentId?: string; // for replies
-     mentions?: string[]; // mentioned user IDs
-   };
-   ```
-
-   **Implementation Details:**
-
-   - **Context Menu Integration**: Use shadcn/ui `DropdownMenu` triggered on right-click (contextmenu event) for each dashboard widget
-   - **Comment Composer**: Small modal/sheet positioned near click location using `Popover` or `Sheet` component
-   - **Hotspot Rendering**: Absolute positioned elements within widget containers, using x/y percentages for precise positioning
-   - **Overlay Layer**: Separate React component (`CommentPinsOverlay`) that queries comments by anchor and renders hotspots
-   - **Real-time Sync**: Optional WebSocket integration via Supabase Realtime, or polling fallback
-
-   **Pre-Implementation Decisions Needed:**
-
-   - Front-end framework confirmation (React/Next.js assumed)
-   - Existing context menu/overlay system to integrate with
-   - Current commenting API status (new feature vs. extending existing)
-   - Dashboard widget structure (what are the "items" - chart widgets, tiles, table cells?)
-   - Real-time requirements (WebSockets vs. refresh-to-see)
-
-2. **Additional Affiliate Networks**
-
-   - Multi-affiliate support (Amazon, Impact, ShareASale, etc.)
-   - Network-specific bonus structures
-   - Cross-network attribution
-
-3. **Additional Ad Platforms**
-
+#### Features
+1. **Additional Ad Channels**
    - Google Ads integration
    - TikTok Ads integration
-   - Unified cross-platform view
+   - Other platforms
 
-4. **Advanced Analytics**
+2. **Additional Affiliate Partners**
+   - Multiple Amazon accounts
+   - Other affiliate programs
+   - Cross-partner analytics
 
-   - Cohort analysis
-   - Retention curves
-   - LTV estimation
-   - Creative performance patterns
-
-5. **Automation & Alerts**
-
-   - Slack/email notifications
-   - Threshold proximity alerts
-   - Anomaly detection
-   - Automated budget recommendations
-
-6. **Modular Extensions**
-   - Creative testing module
-   - Content calendar module
-   - Competitor tracking module
+3. **Advanced Attribution**
+   - Multi-touch attribution models
+   - Cross-channel analysis
 
 ---
 
-## 4. Data Model & Metrics Design
+## Data Model & Metrics
 
-### Core Entities
+### Database Schema (High-Level)
 
-```
-Organizations
-├── Users (via Clerk)
-├── Campaigns
-│   └── Ads
-├── BonusStructures
-├── DailyPerformance (fact table)
-└── Settings
-```
+#### Core Tables
 
-### Detailed Schema
+**organizations**
+- id (UUID, PK)
+- name (string)
+- created_at, updated_at (timestamps)
 
-#### **organizations**
+**users**
+- id (UUID, PK)
+- email (string, unique)
+- name (string)
+- created_at, updated_at (timestamps)
 
-```sql
-id: uuid (PK)
-name: string
-created_at: timestamp
-settings: jsonb (currency, timezone, etc.)
-```
+**organization_members**
+- id (UUID, PK)
+- organization_id (UUID, FK → organizations)
+- user_id (UUID, FK → users)
+- role (enum: owner, editor, viewer)
+- created_at, updated_at (timestamps)
 
-#### **campaigns**
+**campaigns**
+- id (UUID, PK)
+- organization_id (UUID, FK → organizations)
+- name (string)
+- description (text, nullable)
+- status (enum: active, paused, archived)
+- ad_channel (enum: meta, google, tiktok, other) - default: meta
+- created_at, updated_at (timestamps)
 
-```sql
-id: uuid (PK)
-organization_id: uuid (FK)
-name: string
-platform: enum (meta, google, tiktok, other)
-status: enum (active, paused, archived)
-start_date: date
-end_date: date (nullable)
-created_by: uuid (FK to users via Clerk)
-created_at: timestamp
-metadata: jsonb (optional custom fields)
-```
+**ads**
+- id (UUID, PK)
+- campaign_id (UUID, FK → campaigns)
+- name (string)
+- description (text, nullable)
+- ad_type (string, nullable) - e.g., "video", "carousel", "single_image"
+- status (enum: active, paused, archived)
+- external_id (string, nullable) - for Meta Ads API mapping
+- created_at, updated_at (timestamps)
 
-#### **ads**
+**daily_performance** (Core fact table)
+- id (UUID, PK)
+- ad_id (UUID, FK → ads)
+- date (date)
+- spend (decimal)
+- revenue (decimal) - direct affiliate commission
+- shipped_revenue (decimal) - total shipped revenue
+- impressions (integer, nullable)
+- clicks (integer, nullable)
+- conversions (integer, nullable)
+- data_source (enum: manual, meta_api, imported) - default: manual
+- created_at, updated_at (timestamps)
+- UNIQUE(ad_id, date) - prevent duplicate entries
 
-```sql
-id: uuid (PK)
-campaign_id: uuid (FK)
-external_id: string (nullable, for API integrations)
-name: string
-platform_ad_type: string (image, video, carousel, etc.)
-status: enum (active, paused, archived)
-created_at: timestamp
-metadata: jsonb
-```
+**bonus_thresholds**
+- id (UUID, PK)
+- organization_id (UUID, FK → organizations)
+- threshold_amount (decimal) - shipped revenue threshold
+- bonus_amount (decimal) - fixed bonus amount
+- bonus_percentage (decimal, nullable) - percentage bonus (alternative to fixed)
+- effective_date (date) - when this threshold becomes active
+- created_at, updated_at (timestamps)
 
-#### **daily_performance** (Fact Table - Grain: ad × date)
+**notes** (Future - Phase 4)
+- id (UUID, PK)
+- organization_id (UUID, FK → organizations)
+- entity_type (enum: campaign, ad, daily_performance)
+- entity_id (UUID)
+- user_id (UUID, FK → users)
+- content (text)
+- created_at, updated_at (timestamps)
 
-```sql
-id: uuid (PK)
-ad_id: uuid (FK)
-date: date
-spend: decimal(12,2)
-impressions: integer
-clicks: integer
-conversions: integer (optional)
-affiliate_revenue: decimal(12,2) -- direct attributed commission
-data_source: enum (manual, meta_api, google_api)
-created_at: timestamp
-updated_at: timestamp
-notes: text (nullable)
-
-UNIQUE (ad_id, date, data_source)
-```
-
-#### **shipped_revenue** (Separate from daily_performance)
-
-```sql
-id: uuid (PK)
-organization_id: uuid (FK)
-affiliate_network: string (amazon, impact, etc.)
-month: date (stored as first of month)
-shipped_revenue: decimal(12,2)
-commission_revenue: decimal(12,2)
-created_at: timestamp
-updated_at: timestamp
-
-UNIQUE (organization_id, affiliate_network, month)
-```
-
-#### **bonus_structures**
-
-```sql
-id: uuid (PK)
-organization_id: uuid (FK)
-affiliate_network: string
-effective_from: date
-effective_to: date (nullable)
-tiers: jsonb -- [{"threshold": 1000, "bonus": 100}, {...}]
-calculation_type: enum (incremental, replacement)
-created_at: timestamp
-```
-
-#### **roles_permissions** (Clerk + custom)
-
-```sql
-user_id: string (Clerk user ID)
-organization_id: uuid (FK)
-role: enum (owner, editor, ad_manager, finance, viewer)
-created_at: timestamp
-
-UNIQUE (user_id, organization_id)
-```
+### Data Grain
+- **Primary Grain**: Daily by ad (`daily_performance` table)
+- **Aggregation Levels**: Campaign, Organization, Date Range
+- **Projections**: Computed on-the-fly based on current month-to-date averages
 
 ### Key Metrics Definitions
 
-#### 1. **Basic ROAS**
-
+#### 1. Standard ROAS
 ```
-ROAS = Total Affiliate Revenue / Total Ad Spend
+ROAS = Total Revenue / Total Spend
 ```
+- Calculated at: Ad, Campaign, Organization levels
+- Time periods: Daily, MTD, Monthly, Custom range
 
-#### 2. **Bonus-Inclusive ROAS ("True ROAS")**
-
+#### 2. True ROAS (Including Bonuses)
 ```
-True ROAS = (Total Affiliate Revenue + Bonus Earned) / Total Ad Spend
-```
-
-#### 3. **Projected Month-End Metrics**
-
-```
-Projected Spend = Current Spend + (Avg Daily Spend × Days Remaining)
-Projected Revenue = Current Revenue + (Avg Daily Revenue × Days Remaining)
-Projected Shipped Revenue = Current + (linear extrapolation)
-Projected Bonus = bonus_for_tier(Projected Shipped Revenue)
+True ROAS = (Total Revenue + Bonus Amount) / Total Spend
 ```
 
-#### 4. **Bonus Progress**
+**Bonus Calculation Logic**:
+1. Sum all `shipped_revenue` for the organization in the current month
+2. Find applicable bonus thresholds (where `shipped_revenue >= threshold_amount`)
+3. Calculate bonus:
+   - If `bonus_amount` is set: use fixed amount
+   - If `bonus_percentage` is set: `shipped_revenue * (bonus_percentage / 100)`
+4. Apply highest applicable bonus (stepped bonuses)
+5. Allocate bonus proportionally to ads based on their contribution to shipped revenue
 
+**Example**:
+- Threshold 1: $10,000 → $500 bonus
+- Threshold 2: $25,000 → $1,500 bonus
+- Current shipped revenue: $30,000
+- Applicable bonus: $1,500 (highest threshold met)
+- If Ad A contributed $15,000 (50%), it gets $750 bonus
+
+#### 3. Cost Per Acquisition (CPA)
 ```
-Next Threshold = lowest threshold > current_shipped_revenue
-Progress % = (current_shipped_revenue / Next Threshold) × 100
-Days to Next Threshold = (Next Threshold - Current) / Avg Daily Shipped Revenue
+CPA = Total Spend / Conversions
+```
+- Only calculated when conversions > 0
+
+#### 4. Projected End-of-Month Metrics
+```
+Projected Spend = (MTD Spend / Days Elapsed) * Days in Month
+Projected Revenue = (MTD Revenue / Days Elapsed) * Days in Month
+Projected Shipped Revenue = (MTD Shipped Revenue / Days Elapsed) * Days in Month
+Projected Bonus = Calculated based on projected shipped revenue and thresholds
 ```
 
-#### 5. **Campaign Efficiency**
-
-```
-Campaign ROAS = sum(campaign_revenue) / sum(campaign_spend)
-Ad ROAS = ad_revenue / ad_spend
-```
-
-### Data Grain Decisions
-
-**Primary Grain**: `ad × date` (daily)
-
-- Allows flexibility for aggregation
-- Supports day-level trend analysis
-- Manageable data volume (<50K rows/year for 100 ads)
-
-**Shipped Revenue Grain**: `organization × affiliate_network × month`
-
-- Matches Amazon reporting cadence
-- Simplifies bonus calculation
-- Allocated proportionally to ads based on attributed revenue
+### Edge Cases Handled
+1. **Late Threshold Crossing**: If threshold is crossed mid-month, bonus applies from that date forward
+2. **Multiple Thresholds**: Only highest applicable bonus is used (stepped, not cumulative)
+3. **Zero Spend Days**: Revenue can exist without spend (organic/other sources)
+4. **Data Conflicts**: Manual entries override automated data when both exist for same ad/date
 
 ---
 
-## 5. UX/UI Design
+## UX/UI Design & Key Flows
 
 ### Main Dashboard Layout
 
-```
-┌─────────────────────────────────────────────────────────┐
-│ [Logo]  Dashboard  Campaigns  Settings     [User Menu] │
-├─────────────────────────────────────────────────────────┤
-│                                                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
-│  │ Current ROAS │  │   Spend MTD  │  │ Revenue MTD  │ │
-│  │    2.4x      │  │   $12,450    │  │   $29,880    │ │
-│  │ ▲ 0.3 vs LM  │  │ Proj: $18K   │  │ Proj: $43K   │ │
-│  └──────────────┘  └──────────────┘  └──────────────┘ │
-│                                                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
-│  │  True ROAS   │  │ Shipped MTD  │  │ Next Bonus   │ │
-│  │    3.1x      │  │   $8,200     │  │   $10,000    │ │
-│  │ +$6,500 bonus│  │ 82% to next  │  │ ~4 days      │ │
-│  └──────────────┘  └──────────────┘  └──────────────┘ │
-│                                                          │
-│  Filters: [Month ▼] [Campaign: All ▼] [Status ▼]       │
-│                                                          │
-│  ┌────────────────────────────────────────────────────┐│
-│  │         Monthly Spend vs Revenue Trend             ││
-│  │  $50K ┤                                            ││
-│  │       │     ████ Revenue                           ││
-│  │  $30K ┤    ████████                                ││
-│  │       │   ████████████                             ││
-│  │  $10K ┤──██████████████──── Spend                 ││
-│  │       └─────────────────────────────────────       ││
-│  │          Jan  Feb  Mar  Apr  May  Jun             ││
-│  └────────────────────────────────────────────────────┘│
-│                                                          │
-│  ┌────────────────────────────────────────────────────┐│
-│  │            Campaign Performance Table              ││
-│  ├──────────┬────────┬─────────┬────────┬──────────┬─┤│
-│  │ Campaign │ Spend  │ Revenue │ ROAS   │ Status   │▼││
-│  ├──────────┼────────┼─────────┼────────┼──────────┼─┤│
-│  │ Product1 │ $8,200 │ $24,600 │ 3.0x ⬆│ Active   │●││
-│  │ Product2 │ $3,100 │  $6,510 │ 2.1x   │ Active   │●││
-│  │ Product3 │ $1,150 │  $1,770 │ 1.5x ⬇│ Paused   │○││
-│  └──────────┴────────┴─────────┴────────┴──────────┴─┘│
-│                                                          │
-│  [+ New Campaign]  [Enter Daily Data]                   │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
-```
+#### Header/Navigation
+- **Left Sidebar** (shadcn/ui `Sidebar` component):
+  - Logo/Brand
+  - Navigation items:
+    - Dashboard (home)
+    - Campaigns
+    - Ads
+    - Settings (bonus thresholds, org settings)
+  - User menu (profile, logout)
 
-### Key UI Flows
+#### Main Content Area
 
-#### **Flow 1: Daily Data Entry**
+**1. KPI Cards Row** (shadcn/ui `Card` components)
+- Current Month Spend
+- Current Month Revenue
+- Current Month Shipped Revenue
+- Standard ROAS
+- True ROAS (with bonus)
+- Projected End-of-Month True ROAS
 
-```
-1. Click "Enter Daily Data" button
-2. Modal/page opens with:
-   - Date selector (defaults to yesterday)
-   - Campaign filter (optional)
-   - Table: [Ad Name | Spend | Revenue | Notes]
-   - Auto-save on blur
-   - Keyboard navigation (Tab, Enter)
-3. "Save & Close" button
-4. Shows confirmation toast
+**2. Time-Series Chart** (Recharts or similar)
+- X-axis: Date (daily)
+- Y-axis: Amount (spend, revenue, shipped revenue)
+- Multi-line chart with toggleable series
+- Tooltip showing exact values
+- Date range selector above chart
 
-Speed target: 20 ads in <3 minutes
-```
+**3. Filters Bar** (shadcn/ui `Select`, `DatePicker`, `Button`)
+- Date Range Picker (default: current month)
+- Campaign Select (multi-select, "All" option)
+- Ad Select (multi-select, filtered by selected campaigns)
+- Ad Type Filter
+- Status Filter (active/paused/archived)
+- "Apply Filters" button
+- "Reset" button
+- Share/Bookmark button (generates deep link)
 
-#### **Flow 2: Create Campaign & Ads**
+**4. Performance Table** (shadcn/ui `Table` component)
+- Columns: Date, Campaign, Ad, Spend, Revenue, Shipped Revenue, ROAS, True ROAS
+- Sortable columns
+- Pagination
+- Export to CSV button
 
-```
-1. Click "+ New Campaign"
-2. Slide-over form:
-   - Campaign name
-   - Platform (dropdown)
-   - Start date
-   - [Save Campaign]
-3. Immediately show "Add Ads" option
-4. Quick add multiple ads (spreadsheet-style)
-5. Redirect to campaign detail page
+**5. Insights Panel** (Optional in MVP, Enhanced in v1.1)
+- Top 5 performing ads
+- Bottom 5 performing ads
+- Alerts/notifications (e.g., "Campaign X has low ROAS")
 
-Speed target: Campaign + 5 ads in <2 minutes
-```
+### Key User Flows
 
-#### **Flow 3: Configure Bonus Structure**
+#### Flow 1: Adding Daily Performance Data
 
-```
-1. Settings → Bonus Structures
-2. Card per affiliate network
-3. "+ Add Tier" button
-4. Table: [Shipped Revenue Threshold | Bonus Amount | Delete]
-5. Preview calculation with example values
-6. Effective date selector
-7. Save
+**Path A: Single Entry**
+1. Navigate to Dashboard or Ads page
+2. Click "Add Performance Data" button
+3. Modal opens with form:
+   - Date picker (default: today)
+   - Campaign select (required)
+   - Ad select (required, filtered by campaign)
+   - Spend (decimal input)
+   - Revenue (decimal input)
+   - Shipped Revenue (decimal input)
+   - Optional: Impressions, Clicks, Conversions
+4. Click "Save"
+5. Success notification, form closes
+6. Dashboard refreshes with new data
 
-Edge case: Show warning if mid-month change
-```
+**Path B: Bulk Entry**
+1. Navigate to Dashboard
+2. Click "Bulk Entry" button
+3. Table view opens:
+   - Columns: Date, Campaign, Ad, Spend, Revenue, Shipped Revenue
+   - Multiple rows for quick entry
+   - Date picker applies to all rows
+   - Campaign/Ad dropdowns per row
+   - "Add Row" button
+4. Fill in data
+5. Click "Save All"
+6. Validation runs (duplicates, required fields)
+7. Success notification, table closes
+8. Dashboard refreshes
 
-#### **Flow 4: View Campaign Deep Dive**
+#### Flow 2: Creating a Campaign
 
-```
-1. Click campaign name from table
-2. Campaign detail page:
-   - Header with campaign metadata + edit button
-   - Summary cards (spend, revenue, ROAS for this campaign)
-   - Daily trend chart for this campaign
-   - Ad performance table (filterable)
-   - Quick actions: pause/activate ads
-   - Share button → copy URL with filters
-```
+1. Navigate to "Campaigns" page
+2. Click "New Campaign" button
+3. Form opens:
+   - Name (required)
+   - Description (optional)
+   - Ad Channel (select: Meta, Google, TikTok, Other)
+   - Status (default: Active)
+4. Click "Create Campaign"
+5. Success notification
+6. Redirect to campaign detail page (or stay on campaigns list)
 
-### shadcn/ui Component Mapping
+#### Flow 3: Setting Up Bonus Thresholds
 
-| UI Element       | shadcn Component                          |
-| ---------------- | ----------------------------------------- |
-| Navigation       | `NavigationMenu`                          |
-| Summary Cards    | `Card`, `CardHeader`, `CardContent`       |
-| Filters          | `Select`, `Popover` + `Calendar`          |
-| Tables           | `Table` + `DataTable` pattern             |
-| Charts           | `recharts` (external, common with shadcn) |
-| Forms            | `Form`, `Input`, `Button`                 |
-| Modals           | `Dialog` or `Sheet` (slide-overs)         |
-| Date Pickers     | `Calendar` + `Popover`                    |
-| Toasts           | `Toast`, `useToast`                       |
-| Dropdown Menus   | `DropdownMenu`                            |
-| Role Badges      | `Badge`                                   |
-| Data Entry Table | `Table` + `Input` (editable cells)        |
+1. Navigate to "Settings" → "Bonus Thresholds"
+2. View current thresholds (table/list)
+3. Click "Add Threshold"
+4. Form opens:
+   - Threshold Amount (decimal, required)
+   - Bonus Type: Fixed Amount OR Percentage
+   - If Fixed: Bonus Amount (decimal)
+   - If Percentage: Bonus Percentage (decimal)
+   - Effective Date (date picker, default: today)
+5. Click "Save"
+6. Validation: Ensure thresholds don't overlap incorrectly
+7. Success notification
+8. Threshold appears in list
+9. Dashboard automatically recalculates True ROAS
+
+#### Flow 4: Analyzing Performance
+
+1. Open Dashboard
+2. Set date range (e.g., "Last 30 days")
+3. Select specific campaigns or ads (or leave as "All")
+4. View updated KPIs and charts
+5. Click on chart data point or table row for details
+6. Identify underperforming ads (low ROAS)
+7. Click "Pause Ad" or navigate to ad detail to make changes
+8. Bookmark/share current view using deep link
+
+### shadcn/ui Components to Use
+
+- **Navigation**: `Sidebar`, `NavigationMenu`
+- **Layout**: `Card`, `Tabs`, `Separator`
+- **Forms**: `Form`, `Input`, `Select`, `DatePicker`, `Button`, `Label`
+- **Data Display**: `Table`, `Badge`, `Progress`
+- **Feedback**: `Toast`, `Alert`, `Dialog`, `Sheet`
+- **Charts**: Recharts library (not shadcn, but compatible)
+- **Filters**: `Select`, `Popover` (for date picker), `Checkbox`
 
 ### Design Principles
 
-1. **Information Hierarchy**: Big numbers first, details on demand
-2. **Speed**: Minimize clicks, optimize for keyboard users
-3. **Clarity**: Always show both "basic ROAS" and "true ROAS" side-by-side
-4. **Context**: Use color sparingly (green = good, red = concerning, gray = neutral)
-5. **Responsive**: Desktop-first (1440px optimal), tablet-friendly (768px+)
+1. **Speed of Understanding**:
+   - Large, clear numbers for KPIs
+   - Color coding (green = good, red = bad)
+   - Minimal cognitive load
+   - Clear hierarchy
+
+2. **Speed of Data Entry**:
+   - Keyboard shortcuts (e.g., Tab to navigate, Enter to save)
+   - Bulk entry interface
+   - Smart defaults (today's date, last used campaign)
+   - Minimal clicks to complete tasks
+
+3. **Mobile/Tablet Responsiveness**:
+   - Responsive grid layouts
+   - Collapsible sidebar on mobile
+   - Touch-friendly buttons and inputs
+   - Horizontal scroll for tables on small screens
 
 ---
 
-## 6. Technical Architecture & Stack
+## Technical Architecture
 
 ### Recommended Stack
 
-```
-Frontend:  Next.js 14 (App Router)
-UI:        shadcn/ui + Tailwind CSS
-Auth:      Clerk (with organizations)
-Database:  PostgreSQL via Supabase
-ORM:       Drizzle ORM (or Prisma)
-Charts:    Recharts
-Hosting:   Vercel
-APIs:      Next.js API routes / Server Actions
-```
+#### Frontend
+- **Framework**: Next.js 14+ (App Router)
+- **UI Library**: React + shadcn/ui
+- **Styling**: Tailwind CSS
+- **Charts**: Recharts or Chart.js
+- **Forms**: React Hook Form + Zod validation
+- **State Management**: React Query (TanStack Query) for server state
+- **Date Handling**: date-fns
 
-### Stack Justification
+#### Backend
+- **API**: Next.js API Routes (or tRPC for type-safe APIs)
+- **Database**: PostgreSQL (via Supabase or Neon)
+- **ORM**: Prisma (recommended) or Drizzle
+- **Authentication**: Clerk
+- **File Storage**: (Future) Supabase Storage or S3 for exports
 
-#### **Database: Supabase (PostgreSQL)**
+#### Infrastructure
+- **Hosting**: Vercel (seamless Next.js integration)
+- **Database Hosting**: Supabase (Postgres + Auth helpers) or Neon (Postgres only)
+- **Environment Variables**: Vercel Environment Variables
 
-**Why:**
+### Architecture Justification
 
-- Managed Postgres (simple setup, good performance)
-- Built-in auth support (can work alongside Clerk)
-- Realtime subscriptions (future collaboration features)
-- Generous free tier, scales well
-- Direct SQL access for complex queries
+**Why Supabase over Neon?**
+- Supabase provides Postgres + built-in auth helpers + storage + real-time subscriptions
+- Clerk handles auth, so Neon (Postgres-only) is also viable
+- **Recommendation**: Start with Supabase for simplicity, but architecture allows switching
 
-**Alternative:** Neon (serverless Postgres, better cold starts)
+**Why Prisma?**
+- Excellent developer experience
+- Type-safe database access
+- Easy migrations
+- Good performance
+- Alternative: Drizzle (lighter, more SQL-like)
 
-#### **Auth: Clerk**
-
-**Why:**
-
-- Organizations/teams built-in
-- Role-based access control
-- Beautiful pre-built UI components
-- SSR-friendly with Next.js
-- Easy user management
-
-#### **Next.js 14 App Router**
-
-**Why:**
-
-- Server Components = faster initial loads
-- Server Actions = simpler data mutations
+**Why Next.js App Router?**
+- Server components for better performance
 - Built-in API routes
-- SEO-friendly (if ever needed)
-- Great DX with TypeScript
+- Excellent Vercel integration
+- Modern React patterns
 
-#### **Drizzle ORM** (preferred) or Prisma
-
-**Why Drizzle:**
-
-- Lighter than Prisma
-- Better TypeScript inference
-- SQL-like syntax (easier to optimize)
-- Smaller bundle size
-
-**Why Prisma (alternative):**
-
-- More mature ecosystem
-- Better migration tooling
-- Prisma Studio for DB browsing
-
-### Architecture: Modular Design
+### Modular Architecture Structure
 
 ```
 /app
-  /(dashboard)           # Main analytics dashboard
-    /layout.tsx
-    /page.tsx            # Main dashboard
-    /campaigns/
-      /[id]/page.tsx     # Campaign detail
-    /ads/
-      /[id]/page.tsx     # Ad detail
-  /(modules)             # Future modules
-    /creative-testing/   # Module 2 (future)
-    /content-calendar/   # Module 3 (future)
-  /api/
-    /webhooks/           # Clerk, Meta webhooks
-    /integrations/       # External API calls
-
-/lib
-  /db/                   # Database client, schema
-  /services/             # Business logic layer
-    /metrics.ts          # ROAS, projections, bonus calc
-    /campaigns.ts        # Campaign CRUD
-    /ads.ts              # Ad CRUD
-    /performance.ts      # Data entry, imports
-    /integrations/       # Meta API, future integrations
-  /auth/                 # Clerk helpers, permissions
-  /utils/                # Shared utilities
+  /(auth)                    # Auth pages (login, signup)
+    /login
+    /signup
+  /(dashboard)               # Protected dashboard routes
+    /dashboard               # Main dashboard
+    /campaigns
+      /[id]                  # Campaign detail
+    /ads
+      /[id]                  # Ad detail
+    /settings
+      /bonus-thresholds
+  /api                       # API routes
+    /campaigns
+    /ads
+    /performance
+    /bonus-thresholds
+    /analytics
 
 /components
-  /dashboard/            # Dashboard-specific components
-  /ui/                   # shadcn components
-  /shared/               # Reusable cross-module components
+  /ui                        # shadcn/ui components
+  /dashboard                 # Dashboard-specific components
+    /kpi-cards.tsx
+    /performance-chart.tsx
+    /filters.tsx
+  /campaigns                 # Campaign components
+  /ads                       # Ad components
+  /forms                     # Reusable form components
 
-/hooks                   # Custom React hooks
-  /useMetrics.ts
-  /usePermissions.ts
+/lib
+  /db                        # Database client (Prisma)
+  /auth                      # Auth utilities (Clerk)
+  /analytics                 # Analytics calculation engine
+    /roas.ts
+    /bonus.ts
+    /projections.ts
+  /validations               # Zod schemas
+  /utils                     # Utility functions
 
-/types                   # TypeScript types
-  /database.ts
-  /metrics.ts
+/types                       # TypeScript types
+  /database.ts               # Generated Prisma types
+  /api.ts                    # API response types
+
+/prisma
+  /schema.prisma             # Database schema
+  /migrations                # Database migrations
 ```
 
-### Key Architectural Decisions
+### Core Analytics Engine Separation
 
-#### 1. **Separation of Concerns**
+**Key Principle**: Separate calculation logic from UI and API
 
 ```
-UI Layer (components)
-    ↓
-API Layer (Server Actions / API routes)
-    ↓
-Service Layer (business logic)
-    ↓
-Data Layer (ORM / raw SQL)
+/lib/analytics/
+  ├── roas.ts                # ROAS calculations
+  ├── bonus.ts               # Bonus calculation logic
+  ├── projections.ts         # Projection calculations
+  ├── aggregations.ts        # Data aggregation helpers
+  └── metrics.ts             # All metric definitions
 ```
 
-**Example:**
+This allows:
+- Unit testing calculations independently
+- Reuse across API routes and server components
+- Easy extension for future features
+- Clear separation of concerns
 
-```typescript
-// Service layer - /lib/services/metrics.ts
-export async function calculateTrueROAS(
-  organizationId: string,
-  startDate: Date,
-  endDate: Date
-): Promise<ROASResult> {
-  // 1. Fetch ad spend & revenue
-  const performance = await db.query.dailyPerformance...
+### Future Extensibility
 
-  // 2. Fetch shipped revenue & bonus structure
-  const shipped = await db.query.shippedRevenue...
-  const bonuses = await db.query.bonusStructures...
+**Module Pattern**: Each new tool/module follows the same structure:
 
-  // 3. Calculate bonus earned
-  const bonusEarned = calculateBonusFromTiers(shipped, bonuses)
-
-  // 4. Return computed metrics
-  return {
-    spend: sum(performance.spend),
-    revenue: sum(performance.affiliate_revenue),
-    bonusEarned,
-    basicROAS: revenue / spend,
-    trueROAS: (revenue + bonusEarned) / spend
-  }
-}
+```
+/app/(dashboard)/[module-name]
+/components/[module-name]
+/lib/[module-name]
 ```
 
-#### 2. **Data Access Patterns**
+Examples:
+- `/app/(dashboard)/creative-testing`
+- `/app/(dashboard)/content-calendar`
 
-**For Dashboards (read-heavy):**
-
-- Use Server Components with direct DB queries
-- Cache with `unstable_cache` for expensive calculations
-- Revalidate on data mutations
-
-**For Data Entry (write-heavy):**
-
-- Use Server Actions for mutations
-- Optimistic UI updates
-- Validate on server, show errors inline
-
-#### 3. **Extensibility Strategy**
-
-**Module Registration Pattern:**
-
-```typescript
-// /lib/modules/registry.ts
-export const modules = [
-  {
-    id: "ad-analytics",
-    name: "Ad Analytics",
-    path: "/dashboard",
-    icon: ChartBarIcon,
-    permissions: ["view_analytics"],
-  },
-  // Future modules plugged in here
-  {
-    id: "creative-testing",
-    name: "Creative Testing",
-    path: "/creative-testing",
-    icon: BeakerIcon,
-    permissions: ["view_creatives"],
-  },
-];
-```
-
-**Benefits:**
-
-- Easy to add new tools without touching core
-- Consistent navigation
-- Per-module permissions
-
-#### 4. **Permission System**
-
-```typescript
-// /lib/auth/permissions.ts
-export enum Permission {
-  VIEW_DASHBOARD = "view_dashboard",
-  EDIT_CAMPAIGNS = "edit_campaigns",
-  ENTER_DATA = "enter_data",
-  MANAGE_BONUSES = "manage_bonuses",
-  MANAGE_ORG = "manage_org",
-  MANAGE_INTEGRATIONS = "manage_integrations",
-}
-
-export const rolePermissions: Record<Role, Permission[]> = {
-  owner: Object.values(Permission), // All permissions
-  editor: [VIEW_DASHBOARD, EDIT_CAMPAIGNS, ENTER_DATA],
-  ad_manager: [VIEW_DASHBOARD, ENTER_DATA],
-  finance: [VIEW_DASHBOARD, MANAGE_BONUSES],
-  viewer: [VIEW_DASHBOARD],
-};
-
-export async function hasPermission(
-  userId: string,
-  orgId: string,
-  permission: Permission
-): Promise<boolean> {
-  const role = await getUserRole(userId, orgId);
-  return rolePermissions[role].includes(permission);
-}
-```
-
-#### 5. **Integration Architecture** (Phase 2)
-
-```typescript
-// /lib/integrations/base.ts
-interface DataProvider {
-  authenticate(): Promise<void>;
-  fetchDailyPerformance(
-    startDate: Date,
-    endDate: Date
-  ): Promise<PerformanceData[]>;
-  sync(): Promise<SyncResult>;
-}
-
-// /lib/integrations/meta.ts
-class MetaAdsProvider implements DataProvider {
-  async authenticate() {
-    /* OAuth flow */
-  }
-  async fetchDailyPerformance() {
-    /* Meta API */
-  }
-  async sync() {
-    /* Handle conflicts */
-  }
-}
-
-// Easy to add Google, TikTok, etc.
-```
+**Shared Infrastructure**:
+- Auth (Clerk) - shared across all modules
+- Database (Postgres) - shared schema with module-specific tables
+- UI Components (shadcn) - shared design system
 
 ---
 
-## 7. Implementation Plan
+## Implementation Phases
 
-### Pre-Development (Week 0)
+### Phase 1: MVP Foundation (Weeks 1-4)
 
-- [ ] Finalize assumptions (bonus calc, attribution)
-- [ ] Set up project repo
-- [ ] Configure Vercel project
-- [ ] Create Supabase project
-- [ ] Set up Clerk application
-- [ ] Document API keys needed
+#### Week 1: Setup & Infrastructure
+**Requirements**:
+- [ ] Initialize Next.js project with App Router
+- [ ] Set up Tailwind CSS and shadcn/ui
+- [ ] Configure Clerk authentication
+- [ ] Set up Supabase/Neon database
+- [ ] Initialize Prisma with schema
+- [ ] Set up development environment (local DB, env vars)
+- [ ] Deploy to Vercel (staging)
 
-### Week 1-2: Foundation
+**Deliverables**:
+- Working auth flow (signup/login)
+- Database connection established
+- Basic project structure
 
-**Goal:** Auth + basic CRUD working
+#### Week 2: Core Data Models & API
+**Requirements**:
+- [ ] Implement database schema (organizations, users, campaigns, ads, daily_performance, bonus_thresholds)
+- [ ] Set up Prisma migrations
+- [ ] Create API routes:
+  - [ ] `/api/campaigns` (CRUD)
+  - [ ] `/api/ads` (CRUD)
+  - [ ] `/api/performance` (create, read, update, delete)
+  - [ ] `/api/bonus-thresholds` (CRUD)
+- [ ] Implement organization context middleware
+- [ ] Add role-based access control helpers
 
-- [ ] Initialize Next.js project with TypeScript
-- [ ] Install and configure shadcn/ui
-- [ ] Set up Clerk auth with organizations
-- [ ] Design database schema (Drizzle)
-- [ ] Run initial migrations
-- [ ] Create base layout with navigation
-- [ ] Implement organization switching
-- [ ] Build campaign CRUD pages
-- [ ] Build ad CRUD pages (linked to campaigns)
+**Deliverables**:
+- Complete database schema
+- Working API endpoints
+- Basic authorization checks
 
-**Deliverable:** Can create orgs, campaigns, ads (no data yet)
+#### Week 3: Analytics Engine
+**Requirements**:
+- [ ] Implement ROAS calculation functions
+- [ ] Implement bonus calculation logic
+- [ ] Implement projection calculations
+- [ ] Create aggregation helpers (by campaign, by date range, etc.)
+- [ ] Write unit tests for calculations
+- [ ] Create API route `/api/analytics` for dashboard data
 
-### Week 3-4: Data Layer
+**Deliverables**:
+- Core analytics engine
+- Tested calculation logic
+- Analytics API endpoint
 
-**Goal:** Data entry + storage working
+#### Week 4: Dashboard UI
+**Requirements**:
+- [ ] Build main dashboard layout (sidebar, header)
+- [ ] Create KPI cards component
+- [ ] Implement time-series chart
+- [ ] Build filters component
+- [ ] Create performance table
+- [ ] Implement date range selection
+- [ ] Add deep linking support (URL params for filters)
 
-- [ ] Build daily performance entry form
-- [ ] Implement bulk data entry modal
-- [ ] Create CSV import for historical data
-- [ ] Build shipped revenue entry page
-- [ ] Implement bonus structure configuration
-- [ ] Write metric calculation functions
-- [ ] Add data validation logic
-- [ ] Create test data seed script
+**Deliverables**:
+- Functional main dashboard
+- All MVP UI components
 
-**Deliverable:** Can enter and store all required data
+### Phase 2: Data Management (Weeks 5-6)
 
-### Week 5-6: Dashboard UI
+#### Week 5: Campaign & Ad Management
+**Requirements**:
+- [ ] Build campaigns list page
+- [ ] Create campaign detail page
+- [ ] Implement campaign create/edit forms
+- [ ] Build ads list page (filtered by campaign)
+- [ ] Create ad detail page
+- [ ] Implement ad create/edit forms
+- [ ] Add status management (active/paused/archived)
 
-**Goal:** Main dashboard functional
+**Deliverables**:
+- Complete campaign management UI
+- Complete ad management UI
 
-- [ ] Build summary cards with live metrics
-- [ ] Implement monthly trend chart (Recharts)
-- [ ] Create campaign performance table
-- [ ] Add filters (date, campaign, status)
-- [ ] Build campaign detail page
-- [ ] Implement ROAS calculations (basic + true)
-- [ ] Add month-to-date vs projected display
-- [ ] Create bonus progress indicator
+#### Week 6: Data Entry & Bonus Configuration
+**Requirements**:
+- [ ] Build single performance entry form
+- [ ] Implement bulk entry interface
+- [ ] Add data validation (duplicates, required fields)
+- [ ] Create bonus thresholds settings page
+- [ ] Build bonus threshold form
+- [ ] Implement threshold validation logic
+- [ ] Add data import preparation (CSV template generation)
 
-**Deliverable:** Full dashboard answering key questions
+**Deliverables**:
+- Data entry flows
+- Bonus configuration UI
 
-### Week 7-8: Polish & Launch Prep
+### Phase 3: Polish & Testing (Week 7)
 
-**Goal:** Production-ready MVP
+#### Week 7: Testing, Bug Fixes, Polish
+**Requirements**:
+- [ ] End-to-end testing of all flows
+- [ ] Fix bugs and edge cases
+- [ ] Performance optimization
+- [ ] Mobile/tablet responsiveness testing
+- [ ] Accessibility audit
+- [ ] User acceptance testing with stakeholders
+- [ ] Documentation (user guide, API docs)
 
-- [ ] Implement role-based permissions
-- [ ] Add loading states and error handling
-- [ ] Build responsive layouts (tablet)
-- [ ] Write user documentation
-- [ ] Conduct internal testing
-- [ ] Fix bugs from testing
-- [ ] Set up error monitoring (Sentry)
-- [ ] Configure production environment
-- [ ] Deploy to production
-- [ ] Onboard first users
+**Deliverables**:
+- Production-ready MVP
+- Documentation
 
-**Deliverable:** MVP launched ✅
+### Phase 4: v1.1 Enhancements (Weeks 8-10)
 
-### Week 9-10: Meta Integration (Phase 2)
+#### Week 8: Advanced Filtering & Insights
+**Requirements**:
+- [ ] Enhanced filtering (ad type, status, custom date ranges)
+- [ ] Side-by-side comparison view
+- [ ] Top/bottom performers panel
+- [ ] Trend indicators
+- [ ] Export to CSV functionality
 
-- [ ] Research Meta Marketing API requirements
-- [ ] Implement OAuth connection flow
-- [ ] Build data sync service
-- [ ] Create conflict resolution UI
+#### Week 9: Data Import
+**Requirements**:
+- [ ] CSV/Excel import interface
+- [ ] Import template generation
+- [ ] Import validation and error handling
+- [ ] Import preview before commit
+- [ ] Import history/logs
+
+#### Week 10: Polish & Launch v1.1
+**Requirements**:
+- [ ] Testing of new features
+- [ ] Performance optimization
+- [ ] Documentation updates
+- [ ] Launch v1.1
+
+### Phase 5: Meta Ads Integration (Weeks 11-14)
+
+#### Week 11-12: Meta Ads API Integration
+**Requirements**:
+- [ ] Research Meta Ads API (Marketing API)
+- [ ] Set up Meta App and OAuth flow
+- [ ] Implement API client for fetching ad data
+- [ ] Create data mapping logic (Meta campaigns/ads → internal campaigns/ads)
+- [ ] Build sync job/endpoint
+- [ ] Implement conflict resolution (manual vs automated)
+
+#### Week 13: Sync Management UI
+**Requirements**:
+- [ ] Build Meta connection settings page
+- [ ] Create sync trigger UI
+- [ ] Build sync history/logs view
 - [ ] Add sync status indicators
-- [ ] Test with real Meta account
-- [ ] Document setup process
+- [ ] Implement error handling and notifications
 
-### Week 11-12: Enhanced Analytics (Phase 2)
+#### Week 14: Testing & Launch
+**Requirements**:
+- [ ] End-to-end testing of Meta integration
+- [ ] Handle edge cases (API rate limits, errors)
+- [ ] Documentation
+- [ ] Launch Meta integration
 
-- [ ] Build ad detail pages with deep metrics
-- [ ] Implement campaign comparison mode
-- [ ] Add stacked chart views
-- [ ] Create scenario modeling tool
-- [ ] Build PDF export feature
-- [ ] Implement deep links with filters
-- [ ] Add scheduled email reports
+### Phase 6: Collaboration Features (v2.0) - Future
+
+**Timeline**: TBD based on user feedback
+
+**Requirements**:
+- Notes system (campaigns, ads, performance)
+- Comment threads
+- Activity feed
+- Advanced permissions
+- Notifications
 
 ---
 
-## 8. Risk Assessment & Mitigation
+## Success Metrics
+
+### MVP Success Criteria
+1. **Functionality**: All MVP features working end-to-end
+2. **Performance**: Dashboard loads in < 2 seconds
+3. **Data Entry**: Can enter 10 days of data for 5 ads in < 2 minutes
+4. **Accuracy**: ROAS calculations match manual calculations
+5. **Usability**: New user can complete core flows without training
+
+### Long-Term Success Metrics
+1. **Adoption**: 80%+ of team members use dashboard daily
+2. **Time Savings**: 50% reduction in time spent on manual reporting
+3. **Decision Quality**: Improved ad performance (measured by True ROAS)
+4. **Data Accuracy**: < 1% error rate in calculations
+
+---
+
+## Risk Mitigation
 
 ### Technical Risks
+1. **Meta API Changes**: Abstract API layer, version API calls
+2. **Performance at Scale**: Implement pagination, caching, database indexing
+3. **Data Conflicts**: Clear conflict resolution strategy (manual overrides automated)
 
-| Risk                            | Probability | Impact | Mitigation                                     |
-| ------------------------------- | ----------- | ------ | ---------------------------------------------- |
-| Meta API complexity             | Medium      | High   | Start with manual CSV import, defer to Phase 2 |
-| Bonus calculation edge cases    | Medium      | Medium | Thoroughly test with real historical data      |
-| Performance with large datasets | Low         | Medium | Use proper indexes, pagination, caching        |
-| Clerk org switching lag         | Low         | Low    | Use client-side caching                        |
-
-### Product Risks
-
-| Risk                                     | Probability | Impact | Mitigation                                          |
-| ---------------------------------------- | ----------- | ------ | --------------------------------------------------- |
-| Users find data entry too slow           | Medium      | High   | Extensive UX testing, keyboard shortcuts            |
-| Projected metrics inaccurate             | Medium      | Medium | Show confidence intervals, allow manual override    |
-| Bonus structure changes frequently       | Low         | Medium | Make config easy to update, support effective dates |
-| Need multi-currency sooner than expected | Low         | Medium | Design schema to add currency field easily          |
+### Business Risks
+1. **Bonus Calculation Complexity**: Start simple, iterate based on feedback
+2. **User Adoption**: Focus on speed and ease of use in MVP
+3. **Feature Creep**: Strictly follow phased roadmap
 
 ---
 
-## 9. Success Metrics
+## Next Steps
 
-### MVP Success (Week 8)
-
-- ✅ 1+ organization actively using daily
-- ✅ 30-day retention > 80%
-- ✅ Data entry time < 15 min/day
-- ✅ Dashboard load time < 2 seconds
-- ✅ Zero critical bugs in production
-- ✅ User satisfaction score > 4/5
-
-### Phase 2 Success (Week 12)
-
-- ✅ Meta integration reduces data entry by 80%
-- ✅ Advanced dashboards used weekly
-- ✅ 3+ team members per org active
-- ✅ Deep links shared regularly
-- ✅ Month-over-month retention > 90%
-
-### Long-term Success (6 months)
-
-- ✅ 5+ organizations using platform
-- ✅ 2+ additional affiliate networks integrated
-- ✅ Collaboration features adopted
-- ✅ Platform informs 90%+ of ad decisions
-- ✅ Documented ROI improvement vs. previous process
+1. **Resolve Clarifying Questions** (with stakeholders)
+2. **Set up Development Environment** (Week 1 tasks)
+3. **Create Detailed Technical Specs** (for each phase)
+4. **Begin Phase 1 Implementation**
 
 ---
 
-## 10. Open Questions for Product Refinement
+## Appendix: Technology Choices Summary
 
-1. **Bonus Attribution**: Should bonuses be attributed back to specific campaigns/ads proportionally, or stay at org level?
-2. **Historical Analysis**: How important is year-over-year comparison vs. month-over-month?
-3. **Alerting Priority**: What triggers are most valuable? (e.g., "ROAS below 2x for 3 days")
-4. **Mobile Usage**: Any scenarios where mobile view is critical?
-5. **Data Retention**: Any compliance requirements for data storage duration?
-6. **Multi-brand**: Will one org manage multiple brands/Amazon accounts?
-
----
-
-## 11. Next Steps
-
-### Immediate (This Week)
-
-1. ✅ Review this plan and validate assumptions
-2. Address open questions above
-3. Set up development environment
-4. Create initial database schema
-5. Begin Week 1 tasks
-
-### This Month
-
-1. Complete foundation (Weeks 1-2)
-2. Ship data layer (Weeks 3-4)
-3. Review progress and adjust timeline
-
-### This Quarter
-
-1. Launch MVP to first users
-2. Gather feedback and iterate
-3. Begin Phase 2 development
+| Category | Choice | Rationale |
+|----------|--------|-----------|
+| Frontend Framework | Next.js 14+ | Server components, API routes, Vercel integration |
+| UI Library | shadcn/ui | Modern, customizable, accessible components |
+| Database | PostgreSQL (Supabase) | Relational data, ACID compliance, extensible |
+| ORM | Prisma | Type-safe, excellent DX, migrations |
+| Auth | Clerk | Simple setup, org/role support out of box |
+| Charts | Recharts | React-native, flexible, good performance |
+| Forms | React Hook Form + Zod | Type-safe validation, good performance |
+| Hosting | Vercel | Seamless Next.js deployment, edge functions |
 
 ---
 
-## Appendix A: Database Indexes
+*Document Version: 1.0*  
+*Last Updated: [Current Date]*  
+*Status: Ready for Implementation*
 
-```sql
--- Performance optimization indexes
-CREATE INDEX idx_daily_perf_ad_date ON daily_performance(ad_id, date DESC);
-CREATE INDEX idx_daily_perf_date_range ON daily_performance(date) WHERE date >= CURRENT_DATE - INTERVAL '24 months';
-CREATE INDEX idx_ads_campaign_status ON ads(campaign_id, status);
-CREATE INDEX idx_campaigns_org_status ON campaigns(organization_id, status);
-CREATE INDEX idx_shipped_revenue_org_month ON shipped_revenue(organization_id, month DESC);
-```
 
-## Appendix B: Key SQL Queries
-
-### Monthly Summary Query
-
-```sql
-WITH monthly_performance AS (
-  SELECT
-    DATE_TRUNC('month', dp.date) as month,
-    SUM(dp.spend) as total_spend,
-    SUM(dp.affiliate_revenue) as total_revenue
-  FROM daily_performance dp
-  JOIN ads a ON dp.ad_id = a.id
-  JOIN campaigns c ON a.campaign_id = c.id
-  WHERE c.organization_id = $1
-    AND dp.date >= $2 AND dp.date <= $3
-  GROUP BY DATE_TRUNC('month', dp.date)
-),
-bonuses AS (
-  SELECT
-    month,
-    shipped_revenue,
-    calculate_bonus(shipped_revenue, bonus_structure) as bonus_amount
-  FROM shipped_revenue sr
-  WHERE sr.organization_id = $1
-    AND sr.month >= $2 AND sr.month <= $3
-)
-SELECT
-  mp.month,
-  mp.total_spend,
-  mp.total_revenue,
-  b.shipped_revenue,
-  b.bonus_amount,
-  mp.total_revenue / NULLIF(mp.total_spend, 0) as basic_roas,
-  (mp.total_revenue + b.bonus_amount) / NULLIF(mp.total_spend, 0) as true_roas
-FROM monthly_performance mp
-LEFT JOIN bonuses b ON mp.month = b.month
-ORDER BY mp.month DESC;
-```
-
----
-
-**End of Project Plan**
-
-_Last Updated: 2025-11-24_
-_Version: 1.0_
-_Owner: Product Team_
