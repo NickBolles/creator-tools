@@ -130,6 +130,10 @@ Design the product so it supports at least:
        - Individual ads
        - Campaigns
        - Daily/periodic performance summaries
+   - Commenting should feel similar to Google Sheets / Figma-style pins:
+     - Right-click any dashboard element (e.g. chart, card, table cell) to add a comment.
+     - Comments are anchored to that element (via stable IDs/keys, not just raw coordinates) and shown as small hotspots.
+     - Clicking a hotspot opens a lightweight thread (replies, resolve state, and basic mentions later).
    - Long term vision: a **one-stop shop** for our team to review ad performance and discuss changes.
    - For V1, just ensure:
      - The data model and UI layout will not fight adding this later.
