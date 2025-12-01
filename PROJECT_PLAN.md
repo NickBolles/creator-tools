@@ -160,11 +160,57 @@ Building a web dashboard to analyze ad spend vs. revenue/bonuses for a social-me
 **Goal**: Multi-team support and additional affiliate networks.
 
 #### Features:
-1. **Notes & Collaboration**
-   - Comment threads on ads/campaigns
-   - @mentions and notifications
-   - Activity log
-   - Daily/weekly review workflows
+1. **Anchored Comments & Collaboration** (Inspired by Google Sheets/Figma)
+   - **Right-click to add comments** on any dashboard element
+   - **Pinned hotspots** with visual indicators (dots/badges)
+   - **Context anchoring** to charts, cards, table cells, specific data points
+   - **Comment threads** with replies and resolve state
+   - **@mentions** with email/Slack notifications
+   - **Activity log** tracking all comment activity
+   - **Real-time updates** via WebSockets (optional)
+   
+   **Technical Implementation:**
+   - Anchor types: widget, chart, tableCell, metricCard, dataPoint
+   - Store anchor metadata: widgetId, x/y percentages, row/column keys
+   - Overlay layer renders hotspots relative to anchored elements
+   - `useAnchoredComments` hook for comment management
+   - `CommentPinsOverlay` component for visualization
+   
+   **Data Model:**
+   ```typescript
+   type CommentAnchor =
+     | { kind: 'widget'; widgetId: string; xPct?: number; yPct?: number }
+     | { kind: 'chart'; chartId: string; dataPoint?: string; xPct?: number; yPct?: number }
+     | { kind: 'tableCell'; tableId: string; rowKey: string; columnKey: string }
+     | { kind: 'metricCard'; cardId: string }
+   
+   type Comment = {
+     id: string
+     organizationId: string
+     anchor: CommentAnchor
+     text: string
+     createdBy: string
+     createdAt: timestamp
+     resolved: boolean
+     parentId?: string // for replies
+     mentions?: string[] // mentioned user IDs
+   }
+   ```
+   
+   **Implementation Details:**
+   - **Context Menu Integration**: Use shadcn/ui `DropdownMenu` triggered on right-click (contextmenu event) for each dashboard widget
+   - **Comment Composer**: Small modal/sheet positioned near click location using `Popover` or `Sheet` component
+   - **Hotspot Rendering**: Absolute positioned elements within widget containers, using x/y percentages for precise positioning
+   - **Overlay Layer**: Separate React component (`CommentPinsOverlay`) that queries comments by anchor and renders hotspots
+   - **Real-time Sync**: Optional WebSocket integration via Supabase Realtime, or polling fallback
+   
+   **Pre-Implementation Decisions Needed:**
+   - Front-end framework confirmation (React/Next.js assumed)
+   - Existing context menu/overlay system to integrate with
+   - Current commenting API status (new feature vs. extending existing)
+   - Dashboard widget structure (what are the "items" - chart widgets, tiles, table cells?)
+   - Real-time requirements (WebSockets vs. refresh-to-see)
+
 
 2. **Additional Affiliate Networks**
    - Multi-affiliate support (Amazon, Impact, ShareASale, etc.)
